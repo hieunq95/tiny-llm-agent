@@ -1,0 +1,66 @@
+namespace: hieunq95
+
+deployment:
+  name: mydeployment
+  replicas: 1  # use `2` replicas for cloud deployment (optional)
+
+backend:
+  image:
+    repository: hieunq95/tiny-llm-agent-rag-pipeline
+    tag: latest  
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 2
+    limits:
+      memory: 3Gi
+      cpu: 3
+  service:
+    type: NodePort # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
+    port: 8000
+    targetPort: 8000
+    nodePort: 30080
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 300 # 5 minutes to allow for model download
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 300 # 5 minutes to allow for model download
+    periodSeconds: 30
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+frontend:
+  image:
+    repository: hieunq95/tiny-llm-agent-streamlit
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: 300Mi
+      cpu: 0.1
+    limits:
+      memory: 500Mi
+      cpu: 0.3
+  service:
+    type: NodePort # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
+    port: 8501
+    targetPort: 8501
+    nodePort: 30081
+
+storage:
+  modelStorage:
+    name: model-storage
+    mountPath: /rag-pipeline/models
+  vectorStoreStorage:
+    name: vector-store-storage
+    mountPath: /rag-pipeline/vector_store

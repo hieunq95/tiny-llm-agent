@@ -1,0 +1,33 @@
+services:
+  rag-pipeline:
+    build: ../rag-pipeline/
+    container_name: rag-pipeline
+    working_dir: /rag-pipeline
+    volumes:
+    - ../rag-pipeline:/rag-pipeline  # Mount project directory for tests
+    networks:
+    - local-net
+    expose:
+    - "8000"
+    command: tail -f /dev/null  # Keep the container running for testing
+  
+  jenkins:
+    build: .
+    container_name: jenkins
+    restart: always
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./Jenkinsfile:/var/jenkins_home/Jenkinsfile
+    networks:
+      - local-net
+    privileged: true
+
+networks:
+  local-net:
+
+volumes:
+  jenkins_home:

@@ -1,0 +1,65 @@
+services:
+  rag-pipeline: 
+      build: 
+        context: rag-pipeline/
+      container_name: rag-pipeline
+      ports:
+        - "8000:8000"
+      env_file: rag-pipeline/.env
+      volumes:
+        - ./rag-pipeline/models:/rag-pipeline/models
+        - ./rag-pipeline/examples:/rag-pipeline/examples
+        - ./rag-pipeline/vector_store:/rag-pipeline/vector_store
+      networks:
+        - local-net
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+        interval: 20s
+        timeout: 10s
+        retries: 25
+        start_period: 60s
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - local-net
+    depends_on:
+      - rag-pipeline
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - local-net
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
+  streamlit:
+    build: 
+      context: streamlit/
+    container_name: streamlit
+    volumes:
+        - ./:/usr/src/streamlit
+    ports:
+        - "8501:8501"
+    env_file: streamlit/.env
+    networks:
+      - local-net
+    depends_on: 
+      rag-pipeline:
+        condition: service_healthy
+
+networks:
+  local-net:
+
+volumes:
+  grafana-data:
