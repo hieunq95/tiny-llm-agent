@@ -1,0 +1,57 @@
+{
+  "dashboard": {
+    "id": "chatbot-dashboard",
+    "uid": "chatbot-dashboard",
+    "title": "Chatbot Metrics",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Total Requests",
+        "type": "timeseries",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "chatbot_requests_total",
+            "legendFormat": "Requests",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 }
+      },
+      {
+        "title": "Latency (95th percentile)",
+        "type": "timeseries",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(chatbot_request_latency_seconds_bucket[5m]))",
+            "legendFormat": "p95 Latency",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 }
+      },
+      {
+        "title": "Memory Usage",
+        "type": "gauge",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "chatbot_memory_usage_bytes",
+            "legendFormat": "Memory",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 }
+      }
+    ],
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "10s"
+  },
+  "overwrite": true
+}

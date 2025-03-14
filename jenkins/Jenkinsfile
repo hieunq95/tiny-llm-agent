@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
+        BRANCH = 'dev-jenkins'
+        SERVICE_NAME = 'tiny-llm-agent'
+        VENV_PATH = '/opt/venv'
+        PYTHON_PATH = '/rag-pipeline/src'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo 'Cloning repository from ' + REPO_URL
+                git branch: "${BRANCH}", url: "${REPO_URL}", credentialsId: "github-pat"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building Docker image for rag-pipeline backend'
+                    // Build and start containers in detached mode.
+                    sh 'docker-compose -f jenkins/docker-compose.yml up --build -d --no-recreate'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo 'Running unit tests on backend'
+                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src && pytest test "'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    echo 'Deploying services...'
+                    // Add your deployment commands here.
+                    // For example, trigger Kubernetes deployment:
+                    // sh 'kubectl apply -f k8s-manifests/'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline execution complete."
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs."
+        }
+        success {
+            echo "Pipeline succeeded. Your deployment is live!"
+        }
+    }
+}

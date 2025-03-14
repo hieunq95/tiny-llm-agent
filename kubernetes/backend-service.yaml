@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-pipeline
+  namespace: hieunq95
+spec:
+  selector:
+    app: mydeployment
+  ports:
+    - protocol: TCP
+      port: 8000   # Service port
+      targetPort: 8000 # Container port
+      nodePort: 30080  # Exposed port on your machine (must be between 30000-32767)
+  type: NodePort

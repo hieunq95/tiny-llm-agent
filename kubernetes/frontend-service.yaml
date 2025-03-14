@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamlit
+  namespace: hieunq95
+spec:
+  selector:
+    app: mydeployment
+  ports:
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
+      nodePort: 30081
+  type: NodePort
