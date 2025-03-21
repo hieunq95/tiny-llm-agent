@@ -18,20 +18,21 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building Docker image for rag-pipeline backend'
+                    // Build and start containers in detached mode.
+                    sh 'docker-compose -f jenkins/docker-compose.yml up --build -d --no-recreate'
+                }
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 script {
-                    echo 'Setting up Python virtual environment'
-                    sh """
-                        python3 -m venv ${VENV_PATH}
-                        source ${VENV_PATH}/bin/activate
-                        pip install -r rag-pipeline/requirements.txt
-                        cd rag-pipeline
-                        DISABLE_TRACING=true pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/
-                    """
-                    echo 'Saving test reports'
-                    archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
-                    archiveArtifacts artifacts: 'test-reports/results.xml', fingerprint: true
+                    echo 'Running unit tests on backend'
+                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ "'
                 }
             }
         }
@@ -43,15 +44,6 @@ pipeline {
                     sh '''
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                script {
-                    echo 'Building Docker image for rag-pipeline backend'
-                    sh 'docker-compose -f jenkins/docker-compose.yml up --build'
                 }
             }
         }
