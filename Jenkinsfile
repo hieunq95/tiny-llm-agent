@@ -7,7 +7,7 @@ pipeline {
         SERVICE_NAME = 'tiny-llm-agent'
         VENV_PATH = './venv'
         PYTHON_PATH = '/rag-pipeline/src'
-        CODECOV_TOKEN = credentials('codecov-token')
+        CODECOV_TOKEN = credentials('CODECOV_TOKEN')
     }
 
     stages {
@@ -22,12 +22,13 @@ pipeline {
             steps {
                 script {
                     echo 'Setting up Python virtual environment'
-                    sh 'python3 -m venv ${VENV_PATH}'
-                    sh 'source ${VENV_PATH}/bin/activate'
-                    sh 'pip install -r rag-pipeline/requirements.txt'
-                    sh 'cd rag-pipeline'
-                    sh 'DISABLE_TRACING=true pytest --cov=src test/'
-                    sh 'pytest --cov=${PYTHON_PATH} --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/'
+                    sh """
+                        pytheon3 -m venv ${VENV_PATH}
+                        source ${VENV_PATH}/bin/activate
+                        pip install -r rag-pipeline/requirements.txt
+                        cd rag-pipeline
+                        DISABLE_TRACING=true pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/
+                    """
                     echo 'Saving test reports'
                     archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
                     archiveArtifacts artifacts: 'test-reports/results.xml', fingerprint: true
