@@ -21,7 +21,7 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./Jenkinsfile:/var/jenkins_home/Jenkinsfile
+      - ../Jenkinsfile:/var/jenkins_home/Jenkinsfile
     networks:
       - local-net
     privileged: true

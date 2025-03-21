@@ -32,6 +32,7 @@ pipeline {
                 script {
                     echo 'Running unit tests on backend'
                     sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ "'
+                    sh 'docker cp rag-pipeline:/rag-pipeline/coverage.xml ./coverage.xml'
                 }
             }
         }
@@ -41,14 +42,19 @@ pipeline {
                 script {
                     // Upload coverage to Codecov
                     sh '''
-                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml -B main
+                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
                 }
             }
         }
 
-
-
+        stage('Cleanup') {
+            steps {
+                script {
+                    sh 'docker-compose -f jenkins/docker-compose.yml down -v'
+                }
+            }
+        }
     }
 
     post {

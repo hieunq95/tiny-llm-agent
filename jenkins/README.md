@@ -72,9 +72,9 @@ docker-compose -f docker-compose.yml up --build
 
 - Click `Add` to complete, then get back to the Configure window and select `github-pat` credentials.  
 
-- In `Branches to build`, select `*/dev-jenkins` instead of `*/master`.
+- In `Branches to build`, select `*/features` instead of `*/master`.
 
-- In `Script Path`, select `jenkins/Jenkinsfile`.  
+- In `Script Path`, select `Jenkinsfile`.  
 
 - Click `Save`.
 
