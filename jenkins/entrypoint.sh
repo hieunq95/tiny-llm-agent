@@ -5,7 +5,7 @@ echo "Checking Docker socket permissions..."
 
 if [ -S /var/run/docker.sock ]; then
     echo "Fixing permissions for Docker socket..."
-    sudo chmod 666 /var/run/docker.sock
+    sudo usermod -aG docker jenkins
 else
     echo "Warning: Docker socket not found!"
 fi

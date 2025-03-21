@@ -1,5 +1,7 @@
 # 🚀 Tiny LLM Chat Agent
 
+[![Codecov Coverage](https://codecov.io/gh/hieunq95/tiny-llm-agent/branch/main/graph/badge.svg)](https://app.codecov.io/gh/hieunq95/tiny-llm-agent)
+
 A **FastAPI + Streamlit** based **Retrieval-Augmented Generation (RAG) chatbot**, designed to chat with users using local **large language models (LLMs)** while allowing **PDF uploads** for context-aware conversations. The system leverages the **Qwen-2.5:0.5B-Instruct** model, a lightweight LLM optimized for **efficient on-device processing**. This minimum setup ensures **fast response times** while enabling **customized knowledge retrieval** from uploaded documents, making it ideal for research, study, and technical applications.
 
 **Disclaimer**: The `tiny-llm-agent` is provided for the demonstration purpose. It is implemented to run on CPU to ensure compatibility with most hardware devices. Additionally, the response length is limited to a fixed number of tokens because the small LLM cannot efficiently handle very long contexts. Expanding beyond these limitations can be achieved by using a larger model (e.g., Qwen2.5-7B) and enabling GPU processing for faster responses. See [rag-pipeline/notebooks/poc-rag-code.ipynb](rag-pipeline/notebooks/poc-rag-code.ipynb), [rag-pipeline/src/main.py](rag-pipeline/src/main.py), and [rag-pipeline/Dockerfile](rag-pipeline/Dockerfile) for detailed implementation and configuration.
@@ -7,7 +9,7 @@ A **FastAPI + Streamlit** based **Retrieval-Augmented Generation (RAG) chatbot**
 **Architecture** of the platform is as follows:   
 <img src="assets/architecture.png" alt="architecture" width="1000"/>  
 
-The main building blocks of the MLOps system depicted in the image can be described as follows: 
+The main building blocks of the system depicted in the image can be described as follows: 
 - A user sends a query, which is processed through embedding and retrieval vectors.   
 - The system retrieves relevant data from the FAISS vector database and monitors the process.  
 - The response is displayed to the user, while monitoring and tracing are handled by tools like Jaeger Tracing, Prometheus, and Grafana.  
@@ -30,6 +32,7 @@ The main building blocks of the MLOps system depicted in the image can be descri
 ```
 tiny-llm-agent/  
 │── docker-compose.yaml       # Docker setup for backend & frontend  
+│── Jenkinsfile               # Jenkinsfile for CI/CD pipeline
 │
 ├─ rag-pipeline/              # Backend (FastAPI)  
 │ ├─── vector_store/          # Vector database (FAISS)  
