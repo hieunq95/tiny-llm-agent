@@ -5,6 +5,7 @@ USER root
 RUN apt-get update && \
     apt-get install -y docker.io && \
     apt-get install -y git sudo && \
+    apt-get install -y python3.10-venv && \
     apt-get clean
 
 RUN curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
