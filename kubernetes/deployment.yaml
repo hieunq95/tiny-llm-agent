@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment
+  namespace: model-serving
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mydeployment
+  template:
+    metadata:
+      labels:
+        app: mydeployment
+    spec:
+      containers:
+        - name: backend
+          image: hieunq95/tiny-llm-agent-rag-pipeline:v0.1.0
+          resources:
+            requests:
+              memory: 2Gi   
+              cpu: 1      
+            limits:
+              memory: 4Gi  
+              cpu: 2       
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: model-storage
+              mountPath: /rag-pipeline/models  
+        
+        - name: frontend
+          image: hieunq95/tiny-llm-agent-streamlit:v0.1.0
+          resources:
+            requests:
+              memory: 300Mi  
+              cpu: 0.3      
+            limits:
+              memory: 500Mi 
+              cpu: 0.5      
+          ports:
+            - containerPort: 8501
+
+      volumes:
+        - name: model-storage
