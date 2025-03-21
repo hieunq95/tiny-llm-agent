@@ -34,7 +34,7 @@ def setup_pipeline(local_dir: str, file_path: str = None, model: PreTrainedModel
         model=model,
         tokenizer=tokenizer,
         repetition_penalty=1.2,
-        max_new_tokens=256
+        max_new_tokens=500
     )
     
     # Wrap the HuggingFace pipeline in a LangChain object

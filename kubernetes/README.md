@@ -6,7 +6,7 @@ This guide demonstrates the steps to deploy **tiny-llm-agent** services on local
 - **Local Testing**: Running the system on **Minikube** and **Helm** before cloud deployment.  
 - **Cloud Deployment**: Deploying on **Google Kubernetes Engine (GKE)** with autoscaling and monitoring.  
 
-**Disclaimer**: The `tiny-llm-agent` is provided for the demonstration purpose. It is implemented to run on CPU to ensure compatibility with most hardware devices. Additionally, the response length is limited to 256 tokens because the 0.5B LLM cannot efficiently handle very long contexts. Expanding beyond these limitations can be achieved by using a larger model (e.g., Qwen2.5-7B) and enabling GPU processing for faster responses. 
+**Disclaimer**: The `tiny-llm-agent` is provided for the demonstration purpose. It is implemented to run on CPU to ensure compatibility with most hardware devices. Additionally, the response length is limited to a fixed number of tokens because the 0.5B LLM cannot efficiently handle very long contexts. Expanding beyond these limitations can be achieved by using a larger model (e.g., Qwen2.5-7B) and enabling GPU processing for faster responses. 
 
 ---
 
@@ -41,18 +41,18 @@ docker login
 ```
 
 - Step 2: Create a repository on Docker Hub
-Go to [https://hub.docker.com/](https://hub.docker.com/), log in, and manually create a repository, e.g., Namespace `hieunq95` and repositories name`tiny-llm-agent-rag-pipeline` and `tiny-llm-agent-streamlit`.
+Go to [https://hub.docker.com/](https://hub.docker.com/), log in, and manually create a repository, e.g., Namespace `model-serving` and repositories name`tiny-llm-agent-rag-pipeline` and `tiny-llm-agent-streamlit`.
 
 - Step 3: Build and push Docker images to Docker Hub.
 Assuming we are at `tiny-llm-agent/` root directory, to build and push images to Docker Hub:  
 ```bash
 cd rag-pipeline  
-docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-rag-pipeline:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-rag-pipeline:v0.1.0 --push .
 ```
 
 ```bash
 cd streamlit  
-docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-streamlit:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-streamlit:v0.1.0 --push .
 ```
 
 ---
@@ -88,9 +88,9 @@ Assuming we are at `tiny-llm-agent/` root directory, navigating to the `kubernet
 cd kubernetes
 ```  
 
-If the name space `hieunq95` (as in the `deployment.yaml` file) does not exist, let's create the namespace first:
+If the name space `model-serving` (as in the `deployment.yaml` file) does not exist, let's create the namespace first:
 ```bash
-kubectl create namespace hieunq95
+kubectl create namespace model-serving
 ```  
 Then check if it is created successfully:  
 ```bash
@@ -104,11 +104,11 @@ kubectl apply -f deployment.yaml
 ```  
 To verify the pods:  
 ```bash
-kubectl get pods -n hieunq95
+kubectl get pods -n model-serving
 ```  
 To describe pod:  
 ```bash
-kubectl describe pod -n hieunq95
+kubectl describe pod -n model-serving
 ```
 Then, apply the services (make sure the pod is running):
 ```bash 
@@ -137,7 +137,7 @@ kubectl get apiservices | grep metrics
 ```
 Now, check the resources:  
 ```bash
-kubectl top pod -n hieunq95
+kubectl top pod -n model-serving
 ```  
 Output looks like:
 ```
@@ -148,20 +148,20 @@ where `mydeployment-8448897868-qbx95` is the `pod_name`.
 
 Check logs:
 ```bash
-kubectl logs -n hieunq95 pod_name -c backend
-kubectl logs -n hieunq95 pod_name -c frontend
+kubectl logs -n model-serving pod_name -c backend
+kubectl logs -n model-serving pod_name -c frontend
 ```
 
 Check services:  
 ```bash
-kubectl get svc -n hieunq95
+kubectl get svc -n model-serving
 ```
 
 #### Check service accessibility
 Check if the services are accessible:
 ```bash
-kubectl port-forward -n hieunq95 svc/rag-pipeline 8000:8000
-kubectl port-forward -n hieunq95 svc/streamlit 8501:8501
+kubectl port-forward -n model-serving svc/rag-pipeline 8000:8000
+kubectl port-forward -n model-serving svc/streamlit 8501:8501
 ```   
 Then, visit in browser:  
 - Backend: `http://localhost:8000/docs`
@@ -170,8 +170,8 @@ Then, visit in browser:
 ### Cleaning up
 To delete everything:
 ```bash
-kubectl delete deployment mydeployment -n hieunq95
-kubectl delete namespace hieunq95
+kubectl delete deployment mydeployment -n model-serving
+kubectl delete namespace model-serving
 docker stop minikube
 docker remove minikube
 ```
@@ -211,7 +211,7 @@ cd helm-chart/
 ```  
 To install the Helm chart:  
 ```bash
-helm install tiny-llm-agent .
+helm install --namespace model-serving tiny-llm-agent .
 ```  
 To upgrade an existing deployment:  
 ```bash
@@ -232,8 +232,8 @@ Edit the `values.yaml` file to customize the deployment. Key configurations incl
 ### Access points  
 Similar to `kubectl`, let's use port-forward to access to the services. :
 ```bash
-kubectl port-forward -n hieunq95 svc/rag-pipeline 8000:8000
-kubectl port-forward -n hieunq95 svc/streamlit 8501:8501
+kubectl port-forward -n model-serving svc/rag-pipeline 8000:8000
+kubectl port-forward -n model-serving svc/streamlit 8501:8501
 ```   
 Then, visit in browser:  
 - Backend: `http://localhost:8000/docs`
@@ -274,7 +274,7 @@ gcloud container clusters update cluster-hieunq \
   --max-nodes=5
 ```
 
-Now, let's install helm chart on the GCP:  
+Now, let's install helm chart on the GCP with namespace `model-serving`:  
 ```bash
 helm install tiny-llm-agent .
 ```  
@@ -289,7 +289,7 @@ helm uninstall tiny-llm-agent
 ### Access points with external IPs
 To get the running services on the pod:  
 ```bash
-kubectl get svc -n hieunq95
+kubectl get svc -n model-serving
 ```
 The output shows something like this:
 ```

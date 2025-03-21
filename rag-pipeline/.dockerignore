@@ -1,5 +1,9 @@
-.dockerignore
 __pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
 models
 notebooks
 vector_store

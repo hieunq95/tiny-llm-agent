@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mydeployment
-  namespace: hieunq95
+  namespace: model-serving
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: hieunq95/tiny-llm-agent-rag-pipeline:latest
+          image: hieunq95/tiny-llm-agent-rag-pipeline:v0.1.0
           resources:
             requests:
               memory: 2Gi   
@@ -30,7 +30,7 @@ spec:
               mountPath: /rag-pipeline/models  
         
         - name: frontend
-          image: hieunq95/tiny-llm-agent-streamlit:latest
+          image: hieunq95/tiny-llm-agent-streamlit:v0.1.0
           resources:
             requests:
               memory: 300Mi  

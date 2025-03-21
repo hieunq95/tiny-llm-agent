@@ -8,7 +8,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install -r requirements.txt
 
 FROM python:3.10-slim
 
@@ -21,4 +21,4 @@ WORKDIR /rag-pipeline
 
 EXPOSE 8000
 
-CMD ["python", "src/main.py", "--port", "8000"]
+CMD ["python", "src/main.py", "--port", "8000", "--model", "Qwen/Qwen2.5-0.5B-Instruct"]

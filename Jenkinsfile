@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
-        BRANCH = 'dev-jenkins'
+        BRANCH = 'features'
         SERVICE_NAME = 'tiny-llm-agent'
         VENV_PATH = '/opt/venv'
         PYTHON_PATH = '/rag-pipeline/src'
@@ -31,21 +31,24 @@ pipeline {
             steps {
                 script {
                     echo 'Running unit tests on backend'
-                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src && pytest test "'
+                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ "'
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Upload Coverage') {
             steps {
                 script {
-                    echo 'Deploying services...'
-                    // Add your deployment commands here.
-                    // For example, trigger Kubernetes deployment:
-                    // sh 'kubectl apply -f k8s-manifests/'
+                    // Upload coverage to Codecov
+                    sh '''
+                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml -B main
+                    '''
                 }
             }
         }
+
+
+
     }
 
     post {

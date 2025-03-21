@@ -2,39 +2,49 @@ services:
   rag-pipeline: 
       build: 
         context: rag-pipeline/
-      container_name: rag-pipeline
+      env_file: .env
+      image: "${RAG_IMAGE_NAME}:${RAG_IMAGE_TAG}"
+      container_name: "${RAG_CONTAINER_NAME}"
       ports:
-        - "8000:8000"
-      env_file: rag-pipeline/.env
+        - "${RAG_PORT}:${RAG_PORT}"
       volumes:
         - ./rag-pipeline/models:/rag-pipeline/models
         - ./rag-pipeline/examples:/rag-pipeline/examples
         - ./rag-pipeline/vector_store:/rag-pipeline/vector_store
       networks:
         - local-net
+      environment:
+        - OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT}"
+        - OTEL_SERVICE_NAME="${RAG_CONTAINER_NAME}"
+        - OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}"
+        - OTEL_METRICS_EXPORTER=none
       healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
         interval: 20s
         timeout: 10s
         retries: 25
         start_period: 60s
+      depends_on:
+        - jaeger
   prometheus:
-    image: prom/prometheus
-    container_name: prometheus
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
+    env_file: .env
+    container_name: ${PROMETHEUS_CONTAINER_NAME}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
     networks:
       - local-net
     depends_on:
       - rag-pipeline
 
   grafana:
-    image: grafana/grafana
-    container_name: grafana
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG}
+    env_file: .env
+    container_name: ${GRAFANA_CONTAINER_NAME}
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT}:${GRAFANA_PORT}"
     networks:
       - local-net
     depends_on:
@@ -46,17 +56,27 @@ services:
   streamlit:
     build: 
       context: streamlit/
-    container_name: streamlit
-    volumes:
-        - ./:/usr/src/streamlit
+    env_file: .env
+    image: "${STREAMLIT_IMAGE_NAME}:${STREAMLIT_IMAGE_TAG}"
+    container_name: "${STREAMLIT_CONTAINER_NAME}"
     ports:
-        - "8501:8501"
-    env_file: streamlit/.env
+      - "${STREAMLIT_PORT}:${STREAMLIT_PORT}"
     networks:
       - local-net
     depends_on: 
       rag-pipeline:
         condition: service_healthy
+
+  jaeger:
+    image: jaegertracing/all-in-one:${JAEGER_IMAGE_TAG}
+    env_file: .env
+    container_name: "${JAEGER_CONTAINER_NAME}"
+    ports:
+      - "${JAEGER_PORT}:${JAEGER_PORT}"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - local-net
 
 networks:
   local-net:

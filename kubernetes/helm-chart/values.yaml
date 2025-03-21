@@ -1,5 +1,4 @@
-namespace: hieunq95
-
+namespace: model-serving
 deployment:
   name: mydeployment
   replicas: 1  # use `2` replicas for cloud deployment (optional)
@@ -7,7 +6,7 @@ deployment:
 backend:
   image:
     repository: hieunq95/tiny-llm-agent-rag-pipeline
-    tag: latest  
+    tag: v0.1.0  
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -42,7 +41,7 @@ backend:
 frontend:
   image:
     repository: hieunq95/tiny-llm-agent-streamlit
-    tag: latest
+    tag: v0.1.0
     pullPolicy: IfNotPresent
   resources:
     requests:
