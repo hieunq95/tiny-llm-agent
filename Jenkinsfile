@@ -23,7 +23,7 @@ pipeline {
                 script {
                     echo 'Setting up Python virtual environment'
                     sh """
-                        pytheon3 -m venv ${VENV_PATH}
+                        python3 -m venv ${VENV_PATH}
                         source ${VENV_PATH}/bin/activate
                         pip install -r rag-pipeline/requirements.txt
                         cd rag-pipeline
