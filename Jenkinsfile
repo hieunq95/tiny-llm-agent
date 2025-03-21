@@ -5,8 +5,9 @@ pipeline {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
         BRANCH = 'features'
         SERVICE_NAME = 'tiny-llm-agent'
-        VENV_PATH = '/opt/venv'
+        VENV_PATH = './venv'
         PYTHON_PATH = '/rag-pipeline/src'
+        CODECOV_TOKEN = credentials('codecov-token')
     }
 
     stages {
@@ -17,22 +18,19 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    echo 'Building Docker image for rag-pipeline backend'
-                    // Build and start containers in detached mode.
-                    sh 'docker-compose -f jenkins/docker-compose.yml up --build -d --no-recreate'
-                }
-            }
-        }
-
         stage('Run Tests') {
             steps {
                 script {
-                    echo 'Running unit tests on backend'
-                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ "'
-                    sh 'docker cp rag-pipeline:/rag-pipeline/coverage.xml ./coverage.xml'
+                    echo 'Setting up Python virtual environment'
+                    sh 'python3 -m venv ${VENV_PATH}'
+                    sh 'source ${VENV_PATH}/bin/activate'
+                    sh 'pip install -r rag-pipeline/requirements.txt'
+                    sh 'cd rag-pipeline'
+                    sh 'DISABLE_TRACING=true pytest --cov=src test/'
+                    sh 'pytest --cov=${PYTHON_PATH} --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/'
+                    echo 'Saving test reports'
+                    archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
+                    archiveArtifacts artifacts: 'test-reports/results.xml', fingerprint: true
                 }
             }
         }
@@ -48,10 +46,11 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
+        stage('Build') {
             steps {
                 script {
-                    sh 'docker-compose -f jenkins/docker-compose.yml down -v'
+                    echo 'Building Docker image for rag-pipeline backend'
+                    sh 'docker-compose -f jenkins/docker-compose.yml up --build'
                 }
             }
         }
