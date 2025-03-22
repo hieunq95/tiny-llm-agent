@@ -52,7 +52,8 @@ pipeline {
             steps {
                 script {
                     echo 'Checking code coverage'
-                    def coverageFile = 'rag-pipeline/coverage.xml'
+                    sh 'cd rag-pipeline && ls -la'
+                    def coverageFile = 'coverage.xml'
                     // Wait for file to be available
                     waitUntil {
                         fileExists(coverageFile)
