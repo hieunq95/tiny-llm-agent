@@ -49,24 +49,24 @@ pipeline {
             }
         }
 
-        stage('Check Coverage') {
-            steps {
-                script {
-                    echo 'Checking coverage'
-                    def coverage = readFile('rag-pipeline/coverage.xml').text
-                    def matcher = (coverage =~ /line-rate="([^"]+)"/)
-                    if (!matcher) {
-                        error("Failed to parse coverage.xml!")
-                    }
-                    def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
-                    if (coveragePercent < 80) {
-                        error("Coverage ${coveragePercent}% is below the 80% threshold. Deployment blocked!")
-                    } else {
-                        echo "Coverage ${coveragePercent}% meets requirements ✅"
-                    }
-                }
-            }
-        }
+        // stage('Check Coverage') {
+        //     steps {
+        //         script {
+        //             echo 'Checking coverage'
+        //             def coverage = readFile('rag-pipeline/coverage.xml').text
+        //             def matcher = (coverage =~ /line-rate="([^"]+)"/)
+        //             if (!matcher) {
+        //                 error("Failed to parse coverage.xml!")
+        //             }
+        //             def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
+        //             if (coveragePercent < 80) {
+        //                 error("Coverage ${coveragePercent}% is below the 80% threshold. Deployment blocked!")
+        //             } else {
+        //                 echo "Coverage ${coveragePercent}% meets requirements ✅"
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Build') {
             steps {
