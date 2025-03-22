@@ -39,7 +39,12 @@ pipeline {
                 script {
                     echo 'Uploading coverage report to Codecov'
                     sh '''
-                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
+                        cd /var/jenkins_home/workspace/rag-pipeline
+                        curl -s https://codecov.io/bash | \
+                        bash -s -- -t $CODECOV_TOKEN \
+                                    -f coverage.xml \
+                                    -r hieunq95/tiny-llm-agent \
+                                    -C $GIT_COMMIT 
                     '''
                 }
             }
