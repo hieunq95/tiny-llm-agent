@@ -21,7 +21,6 @@ pipeline {
             agent {
                 docker {
                     image 'python:3.10-slim'
-                    args '-v $WORKSPACE:.'
                 }
             }
             steps {
@@ -53,7 +52,9 @@ pipeline {
         stage('Check Coverage') {
             steps {
                 script {
-                    def coverageFile = '/rag-pipeline/coverage.xml'
+                    echo 'Checking code coverage'
+                    sh 'cd rag-pipeline'
+                    def coverageFile = 'coverage.xml'
                     // Wait for file to be available
                     waitUntil {
                         fileExists(coverageFile)
