@@ -20,15 +20,19 @@ pipeline {
         stage('Test') {
             agent {
                 docker {
-                    image 'python:3.10'
+                    image 'python:3.10-slim'
                 }
             }
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    pip install -r rag-pipeline/requirements.txt \
                     cd rag-pipeline \
-                    bash -c "export PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ 
+                    pip install -r requirements.txt \
+                    PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true \
+                    pytest --cov=src \
+                           --cov-report=xml:coverage.xml \
+                           --junitxml=test-reports/results.xml \
+                           test/
                 '''
             }
         }
