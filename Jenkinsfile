@@ -37,16 +37,8 @@ pipeline {
         stage('Upload Coverage') {
             steps {
                 script {
-                    echo 'Uploading coverage report to Codecov'
                     sh '''
-                        docker exec python bash -c "\
-                        cd rag-pipeline && \
-                        curl -s https://codecov.io/bash | \
-                        bash -s -- -t $CODECOV_TOKEN \
-                                    -f coverage.xml \
-                                    -r hieunq95/tiny-llm-agent \
-                                    -C $GIT_COMMIT 
-                        "
+                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
                 }
             }
