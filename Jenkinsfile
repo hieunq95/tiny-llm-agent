@@ -47,8 +47,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building image for rag-pipeline backend'
-                    // Build and start containers in detached mode.
-                    sh 'docker-compose -f jenkins/docker-compose.yml build --no-cache'
+                    // Build containers
+                    sh 'docker-compose -f docker-compose.yml build --no-cache'
                 }
             }
         }
