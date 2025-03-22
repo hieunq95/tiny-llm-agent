@@ -5,7 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
         BRANCH = 'dev-cicd'
         SERVICE_NAME = 'tiny-llm-agent'
-        PYTHON_PATH = 'rag-pipeline/src'
+        PYTHON_PATH = '/rag-pipeline/src'
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')
     }
 
@@ -21,13 +21,12 @@ pipeline {
             agent {
                 docker {
                     image 'python:3.10-slim'
-                    args '-v $WORKSPACE:/app'  // Mount workspace to container
                 }
             }
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    cd /app/rag-pipeline
+                    cd rag-pipeline
                     pip install -r requirements.txt
                     export PYTHONPATH=${PYTHON_PATH}
                     export DISABLE_TRACING=true
@@ -36,12 +35,6 @@ pipeline {
                            --junitxml=test-reports/results.xml \
                            test/
                 '''
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'rag-pipeline/coverage.xml', fingerprint: true
-                    archiveArtifacts artifacts: 'rag-pipeline/test-reports/results.xml', fingerprint: true
-                }
             }
         }
 
