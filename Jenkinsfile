@@ -55,9 +55,9 @@ pipeline {
                     sh 'cd rag-pipeline && ls -la'
                     def coverageFile = 'coverage.xml'
                     // Wait for file to be available
-                    waitUntil {
-                        fileExists(coverageFile)
-                    }
+                    // waitUntil {
+                    //     fileExists(coverageFile)
+                    // }
                     // Verify file content
                     def coverage = readFile(coverageFile)
                     def matcher = (coverage =~ /line-rate="([^"]+)"/)
