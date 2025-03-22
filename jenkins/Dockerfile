@@ -25,6 +25,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 USER jenkins
 
 COPY . /var/jenkins_home/
+RUN sudo usermod -aG docker jenkins
+RUN sudo usermod -aG root jenkins
 
 EXPOSE 8080 50000
 
