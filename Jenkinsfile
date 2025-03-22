@@ -35,25 +35,22 @@ pipeline {
                            test/
                 '''
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'rag-pipeline/coverage.xml', fingerprint: true
+                    archiveArtifacts artifacts: 'rag-pipeline/test-reports/results.xml', fingerprint: true
+                }
+            }
         }
 
         stage('Upload Coverage') {
             steps {
                 script {
-                    // Upload coverage to Codecov
+                    echo 'Uploading coverage report to Codecov'
                     sh '''
+                        cd rag-pipeline \
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                script {
-                    echo 'Building image for rag-pipeline backend'
-                    // Build containers
-                    sh 'docker-compose -f docker-compose.yml build --no-cache'
                 }
             }
         }
@@ -62,6 +59,27 @@ pipeline {
             steps {
                 script {
                     echo 'Checking coverage'
+                    def coverage = readFile('rag-pipeline/coverage.xml').text
+                    def matcher = (coverage =~ /line-rate="([^"]+)"/)
+                    if (!matcher) {
+                        error("Failed to parse coverage.xml!")
+                    }
+                    def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
+                    if (coveragePercent < 80) {
+                        error("Coverage ${coveragePercent}% is below the 80% threshold. Deployment blocked!")
+                    } else {
+                        echo "Coverage ${coveragePercent}% meets requirements ✅"
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building images all services'
+                    // Build containers
+                    sh 'docker-compose -f docker-compose.yml build --no-cache'
                 }
             }
         }
