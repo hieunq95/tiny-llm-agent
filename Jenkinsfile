@@ -5,7 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
         BRANCH = 'dev-cicd'
         SERVICE_NAME = 'tiny-llm-agent'
-        PYTHON_PATH = '/rag-pipeline/src'
+        PYTHON_PATH = 'rag-pipeline/src'
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')
     }
 
@@ -21,19 +21,27 @@ pipeline {
             agent {
                 docker {
                     image 'python:3.10-slim'
+                    args '-v $WORKSPACE:/app'  // Mount workspace to container
                 }
             }
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    cd rag-pipeline \
-                    pip install -r requirements.txt \
-                    PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true \
+                    cd /app/rag-pipeline
+                    pip install -r requirements.txt
+                    export PYTHONPATH=${PYTHON_PATH}
+                    export DISABLE_TRACING=true
                     pytest --cov=src \
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
                            test/
                 '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'rag-pipeline/coverage.xml', fingerprint: true
+                    archiveArtifacts artifacts: 'rag-pipeline/test-reports/results.xml', fingerprint: true
+                }
             }
         }
 
@@ -42,7 +50,7 @@ pipeline {
                 script {
                     echo 'Uploading coverage report to Codecov'
                     sh '''
-                        cd rag-pipeline \
+                        cd rag-pipeline
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
                 }
@@ -52,16 +60,21 @@ pipeline {
         stage('Check Coverage') {
             steps {
                 script {
-                    echo 'Checking coverage'
                     def coverageFile = 'rag-pipeline/coverage.xml'
-                    if (!fileExists(coverageFile)) {
-                        error("${coverageFile} not found! Did tests run successfully?")
+                    // Wait for file to be available
+                    waitUntil {
+                        fileExists(coverageFile)
                     }
-                    def coverage = readFile(coverageFile).text
+                    // Verify file content
+                    def coverage = readFile(coverageFile)
                     def matcher = (coverage =~ /line-rate="([^"]+)"/)
+                    if (!matcher) {
+                        error("Failed to parse ${coverageFile}!")
+                    }
                     def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
+                    
                     if (coveragePercent < 80) {
-                        error("Coverage ${coveragePercent}% is below the 80% threshold. Deployment blocked!")
+                        error("Coverage ${coveragePercent}% is below the 80% threshold!")
                     } else {
                         echo "Coverage ${coveragePercent}% meets requirements ✅"
                     }
@@ -70,10 +83,10 @@ pipeline {
         }
 
         stage('Build') {
+            agent any
             steps {
                 script {
                     echo 'Building images'
-                    // Build containers
                     sh 'docker-compose -f docker-compose.yml build --no-cache'
                 }
             }
@@ -83,8 +96,7 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying services'
-                    // Deploy containers
-                    // sh 'docker-compose -f docker-compose.yml up -d'
+                    sh 'docker-compose -f docker-compose.yml up -d'
                 }
             }
         }
@@ -93,6 +105,7 @@ pipeline {
     post {
         always {
             echo "Pipeline execution complete."
+            sh 'docker-compose -f docker-compose.yml down -v'
         }
         failure {
             echo "Pipeline failed. Please check the logs."
