@@ -52,8 +52,7 @@ pipeline {
             steps {
                 script {
                     echo 'Checking code coverage'
-                    sh 'docker exec python bash -c "cd rag-pipeline"'
-                    def coverageFile = 'coverage.xml'
+                    def coverageFile = '/rag-pipeline/coverage.xml'
                     // Wait for file to be available
                     waitUntil {
                         fileExists(coverageFile)
