@@ -39,12 +39,14 @@ pipeline {
                 script {
                     echo 'Uploading coverage report to Codecov'
                     sh '''
-                        cd rag-pipeline
+                        docker exec python bash -c "\ 
+                        cd rag-pipeline && \
                         curl -s https://codecov.io/bash | \
                         bash -s -- -t $CODECOV_TOKEN \
                                     -f coverage.xml \
                                     -r hieunq95/tiny-llm-agent \
                                     -C $GIT_COMMIT 
+                        "
                     '''
                 }
             }
