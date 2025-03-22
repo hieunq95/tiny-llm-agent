@@ -2,7 +2,7 @@ services:
   jenkins:
     build: .
     container_name: jenkins
-    restart: always
+    restart: unless-stopped
     ports:
       - "8080:8080"
       - "50000:50000"
@@ -13,6 +13,15 @@ services:
     networks:
       - local-net
     privileged: true
+  
+  python:3.10-slim:
+    container_name: python
+    restart: unless-stopped
+    networks:
+      - local-net
+    volumes:
+      - ../rag-pipeline:/rag-pipeline  # Mount project directory for tests
+    command: tail -f /dev/null
 
 networks:
   local-net:

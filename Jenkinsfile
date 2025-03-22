@@ -18,14 +18,10 @@ pipeline {
         }
 
         stage('Test') {
-            agent {
-                docker {
-                    image 'python:3.10-slim'
-                }
-            }
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
+                    docker exec python \
                     cd rag-pipeline \
                     pip install -r requirements.txt \
                     PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true \
@@ -42,6 +38,7 @@ pipeline {
                 script {
                     echo 'Uploading coverage report to Codecov'
                     sh '''
+                        docker exec python \
                         cd rag-pipeline
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
@@ -54,7 +51,8 @@ pipeline {
                 script {
                     echo 'Checking code coverage'
                     sh '''
-                        cd rag-pipeline
+                        docker exec python \
+                        cd rag-pipeline \
                         ls -la
                     '''
                     def coverageFile = './coverage.xml'
