@@ -3,9 +3,8 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
-        BRANCH = 'features'
+        BRANCH = 'dev-cicd'
         SERVICE_NAME = 'tiny-llm-agent'
-        VENV_PATH = './venv'
         PYTHON_PATH = '/rag-pipeline/src'
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')
     }
@@ -18,22 +17,18 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    echo 'Building Docker image for rag-pipeline backend'
-                    // Build and start containers in detached mode.
-                    sh 'docker-compose -f jenkins/docker-compose.yml up --build -d --no-recreate'
+        stage('Test') {
+            agent {
+                docker {
+                    image 'python:3.10-slim'
                 }
             }
-        }
-
-        stage('Run Tests') {
             steps {
-                script {
-                    echo 'Running unit tests on backend'
-                    sh 'docker exec rag-pipeline bash -c "export PYTHONPATH=/rag-pipeline/src DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ "'
-                }
+                echo 'Testing rag-pipeline backend'
+                sh '''
+                    pip install -r rag-pipeline/requirements.txt \
+                    bash -c "export PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true && pytest --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml test/ 
+                '''
             }
         }
 
@@ -44,6 +39,24 @@ pipeline {
                     sh '''
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                     '''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building image for rag-pipeline backend'
+                    // Build and start containers in detached mode.
+                    sh 'docker-compose -f jenkins/docker-compose.yml build --no-cache'
+                }
+            }
+        }
+
+        stage('Check Coverage') {
+            steps {
+                script {
+                    echo 'Checking coverage'
                 }
             }
         }

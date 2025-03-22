@@ -1,16 +1,4 @@
 services:
-  rag-pipeline:
-    build: ../rag-pipeline/
-    container_name: rag-pipeline
-    working_dir: /rag-pipeline
-    volumes:
-    - ../rag-pipeline:/rag-pipeline  # Mount project directory for tests
-    networks:
-    - local-net
-    expose:
-    - "8000"
-    command: tail -f /dev/null  # Keep the container running for testing
-  
   jenkins:
     build: .
     container_name: jenkins
