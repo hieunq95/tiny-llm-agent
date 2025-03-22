@@ -52,7 +52,7 @@ pipeline {
         stage('Check Coverage') {
             steps {
                 script {
-                    def coverageFile = 'rag-pipeline/coverage.xml'
+                    def coverageFile = '/rag-pipeline/coverage.xml'
                     // Wait for file to be available
                     waitUntil {
                         fileExists(coverageFile)
