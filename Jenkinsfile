@@ -21,7 +21,7 @@ pipeline {
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    docker exec python \
+                    docker exec python bash -c "\
                     cd rag-pipeline \
                     pip install -r requirements.txt \
                     PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true \
@@ -29,6 +29,7 @@ pipeline {
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
                            test/
+                           "
                 '''
             }
         }
@@ -38,9 +39,10 @@ pipeline {
                 script {
                     echo 'Uploading coverage report to Codecov'
                     sh '''
-                        docker exec python \
+                        docker exec python bash -c "\
                         cd rag-pipeline
                         curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
+                        "
                     '''
                 }
             }
@@ -51,9 +53,10 @@ pipeline {
                 script {
                     echo 'Checking code coverage'
                     sh '''
-                        docker exec python \
+                        docker exec python -c "\
                         cd rag-pipeline \
                         ls -la
+                        "
                     '''
                     def coverageFile = './coverage.xml'
                     // Wait for file to be available

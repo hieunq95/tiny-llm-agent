@@ -14,7 +14,8 @@ services:
       - local-net
     privileged: true
   
-  python:3.10-slim:
+  python:
+    image: python:3.10-slim
     container_name: python
     restart: unless-stopped
     networks:
