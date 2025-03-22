@@ -26,10 +26,9 @@ pipeline {
             steps {
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    cd rag-pipeline
-                    pip install -r requirements.txt
-                    export PYTHONPATH=${PYTHON_PATH}
-                    export DISABLE_TRACING=true
+                    cd rag-pipeline \
+                    pip install -r requirements.txt \
+                    PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true \
                     pytest --cov=src \
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
