@@ -53,11 +53,12 @@ pipeline {
             steps {
                 script {
                     echo 'Checking coverage'
-                    def coverage = readFile('rag-pipeline/coverage.xml').text
-                    def matcher = (coverage =~ /line-rate="([^"]+)"/)
-                    if (!matcher) {
-                        error("Failed to parse coverage.xml!")
+                    def coverageFile = 'rag-pipeline/coverage.xml'
+                    if (!fileExists(coverageFile)) {
+                        error("${coverageFile} not found! Did tests run successfully?")
                     }
+                    def coverage = readFile(coverageFile).text
+                    def matcher = (coverage =~ /line-rate="([^"]+)"/)
                     def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
                     if (coveragePercent < 80) {
                         error("Coverage ${coveragePercent}% is below the 80% threshold. Deployment blocked!")
