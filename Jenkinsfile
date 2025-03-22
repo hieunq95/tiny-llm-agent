@@ -24,7 +24,7 @@ pipeline {
                     docker exec python bash -c "\
                     cd rag-pipeline && \
                     pip install -r requirements.txt && \
-                    PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true && \
+                    export PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true && \
                     pytest --cov=src \
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
@@ -52,13 +52,7 @@ pipeline {
             steps {
                 script {
                     echo 'Checking code coverage'
-                    sh '''
-                        docker exec python -c "\
-                        cd rag-pipeline && \
-                        ls -la
-                        "
-                    '''
-                    def coverageFile = './coverage.xml'
+                    def coverageFile = 'rag-pipeline/coverage.xml'
                     // Wait for file to be available
                     waitUntil {
                         fileExists(coverageFile)
