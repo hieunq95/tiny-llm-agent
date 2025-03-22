@@ -10,22 +10,15 @@ services:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - ../Jenkinsfile:/var/jenkins_home/Jenkinsfile
-    networks:
-      - local-net
     privileged: true
   
   python:
-    image: python:3.10-slim
+    image: python:3.10.16-slim
     container_name: python
     restart: unless-stopped
-    networks:
-      - local-net
     volumes:
       - ../rag-pipeline:/rag-pipeline  # Mount project directory for tests
-    command: tail -f /dev/null
-
-networks:
-  local-net:
+    command: sh -c "apt-get update && apt-get install -y curl && apt-get install -y git && tail -f /dev/null"
 
 volumes:
   jenkins_home:
