@@ -40,9 +40,8 @@ pipeline {
                     sh '''
                         docker exec python bash -c "\
                         cd rag-pipeline && \
-                        pip install codecov-cli==10.2.1 && \
                         export CODECOV_TOKEN=${CODECOV_TOKEN} && \
-                        codecovcli -v upload-coverage -t $CODECOV_TOKEN -f coverage.xml
+                        curl -s https://codecov.io/bash | bash -s -- -t $CODECOV_TOKEN -f coverage.xml
                         "
                     '''
                 }
