@@ -35,12 +35,6 @@ pipeline {
                            test/
                 '''
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'rag-pipeline/coverage.xml', fingerprint: true
-                    archiveArtifacts artifacts: 'rag-pipeline/test-reports/results.xml', fingerprint: true
-                }
-            }
         }
 
         stage('Upload Coverage') {
