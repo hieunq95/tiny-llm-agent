@@ -12,3 +12,4 @@ rag-pipeline/.pytest_cache
 rag-pipeline/.coverage
 rag-pipeline/.coverage.*
 rag-pipeline/test-reports
+rag-pipeline/coverage.xml
