@@ -53,23 +53,16 @@ pipeline {
                 script {
                     echo 'Checking code coverage'
                     sh 'cd rag-pipeline && ls -la'
-                    def coverageFile = 'rag-pipeline/coverage.xml'
-                    // Wait for file to be available
-                    // waitUntil {
-                    //     fileExists(coverageFile)
-                    // }
-                    // Verify file content
-                    def coverage = readFile(coverageFile)
-                    def matcher = (coverage =~ /line-rate="([^"]+)"/)
-                    if (!matcher) {
-                        error("Failed to parse ${coverageFile}!")
-                    }
-                    def coveragePercent = (matcher[0][1].toFloat() * 100).round(2)
-                    
-                    if (coveragePercent < 80) {
-                        error("Coverage ${coveragePercent}% is below the 80% threshold!")
+                    def fileContent = readFile "/rag-pipeline/coverage.xml"
+                    def xml = new XmlSlurper().parseText(fileContent)
+                    def lineRate = xml.@'line-rate'.text()
+                    echo "Line Rate: ${lineRate}"
+
+                    float coverage = lineRate.toFloat()
+                    if (coverage < 0.8) {
+                    error("Code coverage too low: ${coverage * 100}%")
                     } else {
-                        echo "Coverage ${coveragePercent}% meets requirements ✅"
+                    echo "Coverage is sufficient: ${coverage * 100}%"
                     }
                 }
             }
