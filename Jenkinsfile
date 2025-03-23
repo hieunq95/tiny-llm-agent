@@ -89,7 +89,7 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying services'
-                    sh 'docker-compose -f docker-compose.yml up -d'
+                    // sh 'docker-compose -f docker-compose.yml up -d'
                 }
             }
         }
