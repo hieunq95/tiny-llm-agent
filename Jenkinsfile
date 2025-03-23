@@ -52,10 +52,14 @@ pipeline {
             steps {
                 script {
                     echo 'Checking code coverage'
-                    env.WORKSPACE = pwd()
-                    def fileContent = readFile "${env.WORKSPACE}/rag-pipeline/coverage.xml"
-                    def xml = new XmlSlurper().parseText(fileContent)
-                    def lineRate = xml.@'line-rate'.text()
+                    // env.WORKSPACE = pwd()   
+                    // def fileContent = readFile "${env.WORKSPACE}/rag-pipeline/coverage.xml"
+                    // def xml = new XmlSlurper().parseText(fileContent)
+                    // def lineRate = xml.@'line-rate'.text()
+                    def lineRate = sh(
+                        script: 'grep "line-rate" rag-pipeline/coverage.xml | sed -n \'s/.*line-rate="\\([^"]*\\).*/\\1/p\'',
+                        returnStdout: true
+                    ).trim()
                     echo "Line Rate: ${lineRate}"
 
                     float coverage = lineRate.toFloat()
