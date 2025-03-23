@@ -52,7 +52,6 @@ pipeline {
             steps {
                 script {
                     echo 'Checking code coverage'
-                    sh 'cd rag-pipeline && ls -la'
                     def fileContent = readFile "/rag-pipeline/coverage.xml"
                     def xml = new XmlSlurper().parseText(fileContent)
                     def lineRate = xml.@'line-rate'.text()
