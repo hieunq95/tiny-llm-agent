@@ -7,9 +7,8 @@ rag-pipeline/test/__pycache__
 rag-pipeline/test/.pytest_cache
 rag-pipeline/src/__pycache__
 rag-pipeline/reports
-rag-pipeline/test-results.xml
+rag-pipeline/*.xml
 rag-pipeline/.pytest_cache
 rag-pipeline/.coverage
 rag-pipeline/.coverage.*
 rag-pipeline/test-reports
-rag-pipeline/coverage.xml

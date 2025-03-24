@@ -65,26 +65,6 @@ pipeline {
             }
         }
 
-        // stage('Check Coverage') {
-        //     steps {
-        //         script {
-        //             echo 'Checking code coverage'
-        //             def lineRate = sh(
-        //                 script: 'grep -m1 "line-rate" rag-pipeline/coverage.xml | sed -n \'s/.*line-rate="\\([^"]*\\).*/\\1/p\'',
-        //                 returnStdout: true
-        //             ).trim()
-        //             echo "Line Rate: ${lineRate}"
-
-        //             float coverage = lineRate.toFloat()
-        //             if (coverage < 0.8) {
-        //             error("Code coverage too low: ${coverage * 100}%")
-        //             } else {
-        //             echo "Coverage is sufficient: ${coverage * 100}%"
-        //             }
-        //         }
-        //     }
-        // }
-
         stage('Build') {
             agent any
             steps {
