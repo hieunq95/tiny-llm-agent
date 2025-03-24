@@ -19,6 +19,7 @@ pipeline {
 
         stage('Test') {
             steps {
+                // Run pytest and generate code coverage report
                 echo 'Testing rag-pipeline backend'
                 sh '''
                     docker exec python bash -c "\
@@ -31,6 +32,22 @@ pipeline {
                            test/
                            "
                 '''
+                // Check if coverage passes the threshold
+                script {
+                    echo 'Checking code coverage'
+                    def lineRate = sh(
+                        script: 'grep -m1 "line-rate" rag-pipeline/coverage.xml | sed -n \'s/.*line-rate="\\([^"]*\\).*/\\1/p\'',
+                        returnStdout: true
+                    ).trim()
+                    echo "Line Rate: ${lineRate}"
+
+                    float coverage = lineRate.toFloat()
+                    if (coverage < 0.8) {
+                    error("Code coverage too low: ${coverage * 100}%")
+                    } else {
+                    echo "Coverage is sufficient: ${coverage * 100}%"
+                    }
+                }
             }
         }
 
@@ -48,29 +65,25 @@ pipeline {
             }
         }
 
-        stage('Check Coverage') {
-            steps {
-                script {
-                    echo 'Checking code coverage'
-                    // env.WORKSPACE = pwd()   
-                    // def fileContent = readFile "${env.WORKSPACE}/rag-pipeline/coverage.xml"
-                    // def xml = new XmlSlurper().parseText(fileContent)
-                    // def lineRate = xml.@'line-rate'.text()
-                    def lineRate = sh(
-                        script: 'grep "line-rate" rag-pipeline/coverage.xml | sed -n \'s/.*line-rate="\\([^"]*\\).*/\\1/p\'',
-                        returnStdout: true
-                    ).trim()
-                    echo "Line Rate: ${lineRate}"
+        // stage('Check Coverage') {
+        //     steps {
+        //         script {
+        //             echo 'Checking code coverage'
+        //             def lineRate = sh(
+        //                 script: 'grep -m1 "line-rate" rag-pipeline/coverage.xml | sed -n \'s/.*line-rate="\\([^"]*\\).*/\\1/p\'',
+        //                 returnStdout: true
+        //             ).trim()
+        //             echo "Line Rate: ${lineRate}"
 
-                    float coverage = lineRate.toFloat()
-                    if (coverage < 0.8) {
-                    error("Code coverage too low: ${coverage * 100}%")
-                    } else {
-                    echo "Coverage is sufficient: ${coverage * 100}%"
-                    }
-                }
-            }
-        }
+        //             float coverage = lineRate.toFloat()
+        //             if (coverage < 0.8) {
+        //             error("Code coverage too low: ${coverage * 100}%")
+        //             } else {
+        //             echo "Coverage is sufficient: ${coverage * 100}%"
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Build') {
             agent any
