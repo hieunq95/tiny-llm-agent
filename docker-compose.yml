@@ -73,7 +73,12 @@ services:
     container_name: "${JAEGER_CONTAINER_NAME}"
     ports:
       - "${JAEGER_PORT}:${JAEGER_PORT}"
+      - "${JAEGER_PORT_UDP}:${JAEGER_PORT_UDP}/udp"
+      - "${JAEGER_COLLECTOR_PORT}:${JAEGER_COLLECTOR_PORT}"
     environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=${COLLECTOR_ZIPKIN_HOST_PORT}
+      - USE_OPENMP=1
+      - OMP_NUM_THREADS=1
       - COLLECTOR_OTLP_ENABLED=true
     networks:
       - local-net

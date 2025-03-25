@@ -72,13 +72,16 @@ docker-compose -f docker-compose.yml up --build
 
 - Click `Add` to complete, then get back to the Configure window and select `github-pat` credentials.  
 
-- In `Branches to build`, select `*/features` instead of `*/master`.
+- In `Branches to build`, select `*/dev-cicd` instead of `*/master`.
 
-- In `Script Path`, select `Jenkinsfile`.  
+- In `Script Path`, select `Jenkinsfile`.   
 
 - Click `Save`.
 
-- Click `Build Now` on the left panel. This will automatically pull project from GitHub, run backend service, and run `pytest` for the service functions.
+- Go to `Credentials` in `Manage Jenkins` tab and add another token for `Codecov` service (register account [here](https://about.codecov.io/)). This is for uploading code coverage report
+to `Codecov` and use the coverage bag in the GitHub repo. 
+
+- Go back to the pipeline and click `Build Now` on the left panel. This will automatically pull project from GitHub, run backend service, and run `pytest` for the service functions.
 
 ![](images/jenkins_s10.png)
 

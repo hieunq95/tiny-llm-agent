@@ -211,7 +211,7 @@ cd helm-chart/
 ```  
 To install the Helm chart:  
 ```bash
-helm install --namespace model-serving tiny-llm-agent .
+helm install tiny-llm-agent .
 ```  
 To upgrade an existing deployment:  
 ```bash

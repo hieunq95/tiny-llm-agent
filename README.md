@@ -98,10 +98,11 @@ docker-compose up --build
 
 Once running:
 ```bash
-Backend (FastAPI) → http://localhost:8000
+Backend (FastAPI) → http://localhost:8000/docs
 Frontend (Streamlit) → http://localhost:8501
 Monitoring (Prometheus) → http://localhost:9090
-Dashboard (Grafana) → http://localhost:3000
+Dashboard (Grafana) → http://localhost:3000  
+Distributed Tracing (Jeager Tracing) → http://localhost:16686  
 ```
 
 #### To stop:

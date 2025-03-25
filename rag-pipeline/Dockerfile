@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y curl
 
 COPY --from=build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+ENV OMP_NUM_THREADS=1
 COPY . /rag-pipeline
 WORKDIR /rag-pipeline
 

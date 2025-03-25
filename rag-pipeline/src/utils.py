@@ -7,20 +7,24 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM
 from prometheus_client import Counter, Histogram, Gauge
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
-if os.getenv("DISABLE_TRACING") != "true":
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-    
-    # Initialize OpenTelemetry
-    trace.set_tracer_provider(TracerProvider())
-    trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(OTLPSpanExporter(endpoint="http://jaeger:4317"))
-    )
-else:
-    trace = None
+# Initialize OpenTelemetry
+set_tracer_provider(
+    TracerProvider(resource=Resource.create({SERVICE_NAME: "rag-pipeline-service"}))
+)
+tracer = get_tracer_provider().get_tracer("rag-pipeline", "0.1.1")
+jaeger_exporter = JaegerExporter(
+    collector_endpoint="http://jaeger:14268/api/traces"
+    # collector_endpoint="http://jaeger:4317"
+)
+span_processor = BatchSpanProcessor(jaeger_exporter)
+get_tracer_provider().add_span_processor(span_processor)
 
 def get_hardware() -> str:
     """Get hardware available for inference.
@@ -86,45 +90,6 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # Initialize logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def load_llm(model_name="Qwen/Qwen2.5-0.5B-Instruct"):
-    """Function to load LLM on startup.
-
-    Args:
-        model_name (str, optional): Model name on [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct). 
-        Defaults to "Qwen/Qwen2.5-0.5B-Instruct".
-    """
-    start_time = time.time()
-    
-    try:
-        # Loading LLM Model
-        logger.info("🔄 Loading LLM ...")
-        local_dir = get_model_dir(model_name)
-        # Ensure the directory exists
-        os.makedirs(local_dir, exist_ok=True)
-        
-        if not os.path.exists(os.path.join(local_dir, "config.json")):
-            logger.info(f"Model not found locally, downloading to {local_dir}...")
-            snapshot_download(repo_id=model_name, local_dir=local_dir)
-            logger.info("Model downloaded!")
-        else:
-            logger.info(f"Model already exists in {local_dir}, skipping download.")
-        
-        # Get hardware
-        hardware = get_hardware()
-        
-        logger.info(f"Loading model from {local_dir} on {hardware}...")
-        model_state.model = AutoModelForCausalLM.from_pretrained(
-            pretrained_model_name_or_path=local_dir,
-            device_map=hardware
-            )    
-
-        MODEL_LOAD_TIME.observe(time.time() - start_time)
-        model_state.llm_loaded = True
-        logger.info("✅ LLM Model Loaded Successfully")
-    except Exception as e:
-        logger.error(f"❌ LLM Model Load Failed: {e}", exc_info=True)
-        model_state.llm_loaded = False
         
 def monitor_memory_usage(interval: int=5):
     """Get memory usage of the LLM.

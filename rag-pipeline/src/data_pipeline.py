@@ -5,7 +5,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chains.retrieval_qa.base import RetrievalQA
 from model_setup import load_model
 from data_preparation import prepare_retriever
-from utils import get_model_dir
+from utils import get_model_dir, tracer, trace
 
 def setup_pipeline(local_dir: str, file_path: str = None, model: PreTrainedModel = None) -> RetrievalQA:
     """Setup a QA chain with RAG model.
@@ -18,45 +18,48 @@ def setup_pipeline(local_dir: str, file_path: str = None, model: PreTrainedModel
     Returns:
         RetrievalQA: A QA chain object.
     """
-    tokenizer = AutoTokenizer.from_pretrained(local_dir)
-    
-    if model is None:
-        model = load_model(
-            model_name="Qwen/Qwen2.5-0.5B-Instruct", 
-            local_dir=get_model_dir()
+    with tracer.start_as_current_span("setup_pipeline") as setup_pipeline:
+        with tracer.start_as_current_span("load_tokenizer", links=[trace.Link(setup_pipeline.get_span_context())]):
+            tokenizer = AutoTokenizer.from_pretrained(local_dir)
+        
+        if model is None:
+            model = load_model(
+                model_name="Qwen/Qwen2.5-0.5B-Instruct", 
+                local_dir=get_model_dir()
+            )
+        
+        with tracer.start_as_current_span("prepare_retriever", links=[trace.Link(setup_pipeline.get_span_context())]):
+            retriever = prepare_retriever(file_path=file_path)
+        
+        # Setup a RAG pipeline
+        pipe = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            repetition_penalty=1.2,
+            max_new_tokens=500
         )
-    
-    retriever = prepare_retriever(file_path=file_path)
-    
-    # Setup a RAG pipeline
-    pipe = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        repetition_penalty=1.2,
-        max_new_tokens=500
-    )
-    
-    # Wrap the HuggingFace pipeline in a LangChain object
-    local_llm = HuggingFacePipeline(pipeline=pipe)
-    
-    # Define the prompt template
-    prompt_template = """Answer based on context:\n{context}\nQuestion: {question}\nAnswer:"""
-    prompt = PromptTemplate(
-        input_variables=["contenxt", "question"],
-        template=prompt_template
-    )
-    
-    # Setup a QA chain
-    qa_chain = RetrievalQA.from_chain_type(
-    llm=local_llm,
-    chain_type="stuff",
-    retriever=retriever,
-    return_source_documents=False,
-    chain_type_kwargs={"prompt": prompt}
-    )
-    
-    return qa_chain
+        
+        # Wrap the HuggingFace pipeline in a LangChain object
+        local_llm = HuggingFacePipeline(pipeline=pipe)
+        
+        # Define the prompt template
+        prompt_template = """Answer based on context:\n{context}\nQuestion: {question}\nAnswer:"""
+        prompt = PromptTemplate(
+            input_variables=["contenxt", "question"],
+            template=prompt_template
+        )
+        
+        # Setup a QA chain
+        qa_chain = RetrievalQA.from_chain_type(
+        llm=local_llm,
+        chain_type="stuff",
+        retriever=retriever,
+        return_source_documents=False,
+        chain_type_kwargs={"prompt": prompt}
+        )
+        
+        return qa_chain
 
 def chat_with_llm(question: str):
     """Ask a question to the QA chain and return the response.

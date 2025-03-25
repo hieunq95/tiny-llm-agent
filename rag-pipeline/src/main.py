@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from data_pipeline import setup_pipeline
+from model_setup import load_model
 from utils import *
 
 class ChatRequest(BaseModel):
@@ -14,6 +15,28 @@ class ChatRequest(BaseModel):
 
 app = FastAPI()
 FastAPIInstrumentor.instrument_app(app)
+
+def load_llm(model_name="Qwen/Qwen2.5-0.5B-Instruct"):
+    """Function to load LLM on startup.
+
+    Args:
+        model_name (str, optional): Model name on [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct). 
+        Defaults to "Qwen/Qwen2.5-0.5B-Instruct".
+    """
+    with tracer.start_as_current_span("load_llm") as load_llm:
+        start_time = time.time()
+        
+        try:
+            # Loading LLM Model
+            logger.info("🔄 Loading LLM ...")
+            local_dir = get_model_dir(model_name)
+            model_state.model = load_model(model_name=model_name, local_dir=local_dir)           
+            MODEL_LOAD_TIME.observe(time.time() - start_time)
+            model_state.llm_loaded = True
+            logger.info("✅ LLM Model Loaded Successfully")
+        except Exception as e:
+            logger.error(f"❌ LLM Model Load Failed: {e}", exc_info=True)
+            model_state.llm_loaded = False
 
 @app.get("/metadata")
 def get_metadata():
@@ -37,25 +60,28 @@ async def upload_pdf(user_id: str, file: UploadFile = File(...)):
         user_id (str): User ID for storing and retrieving PDF documents.
         file (UploadFile, optional): PDF file to be uploaded. Defaults to File(...).
     """
-    if not model_state.llm_loaded:
-        raise HTTPException(status_code=503, detail="LLM is still loading. Please wait.")
-    
-    try:
-        # Save file locally
-        file_path = UPLOAD_DIR / f"{user_id}_{file.filename}"
-        os.makedirs("./uploaded_pdfs", exist_ok=True)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
-        # Update qa_pipeline with the new document
-        logger.info(f" Updating retriever for user {user_id}...")
-        model_state.qa_pipeline = setup_pipeline(local_dir=get_model_dir(), file_path=str(file_path), model=model_state.model)
-        logger.info("Retriever updated!")
-        return {"message": "PDF processed and stored successfully", "file_path": file_path}
+    with tracer.start_as_current_span("upload_pdf") as upload_pdf:
+        if not model_state.llm_loaded:
+            raise HTTPException(status_code=503, detail="LLM is still loading. Please wait.")
+        try:
+            # Save file locally
+            file_path = UPLOAD_DIR / f"{user_id}_{file.filename}"
+            os.makedirs("./uploaded_pdfs", exist_ok=True)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            # Update qa_pipeline with the new document
+            logger.info(f" Updating retriever for user {user_id}...")
+            with tracer.start_as_current_span(
+                "setup_pipeline", links=[trace.Link(upload_pdf.get_span_context())]
+            ):
+                model_state.qa_pipeline = setup_pipeline(local_dir=get_model_dir(), file_path=str(file_path), model=model_state.model)
+            logger.info("Retriever updated!")
+            return {"message": "PDF processed and stored successfully", "file_path": file_path}
 
-    except Exception as e:
-        logger.error(f"❌ Error updating retriever: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            logger.error(f"❌ Error updating retriever: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/api/chat", description="API endpoint to chat with local LLM and measure latency with Prometheus.")
 def chat_endpoint(user_id: str, request: ChatRequest):

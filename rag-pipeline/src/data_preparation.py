@@ -4,7 +4,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.vectorstores.base import VectorStoreRetriever
 from data_extraction import extract_data
-from utils import get_hardware, get_root_dir, get_doc_dir
+from utils import get_hardware, get_root_dir, get_doc_dir, trace, tracer
 
 def compute_content_hash(chunks: list, embedding_model_name: str) -> str:
     """Compute a hash based on document content and embedding model name.
@@ -76,28 +76,34 @@ def prepare_retriever(
     Returns:
         VectorStoreRetriever: A retriever object.
     """
-    # Initialize embeddings
-    hardware = get_hardware()
-    embeddings = HuggingFaceEmbeddings(
-        model_name=embedding_model_name,
-        model_kwargs={"device": hardware}
-        )
-    
-    # Create text chunks
-    chunks = extract_data(get_doc_dir() if file_path is None else file_path)
-    vector_store = get_vector_store(
-        chunks=chunks,
-        embeddings=embeddings,
-        cache_dir=get_root_dir() + "rag-pipeline/vector_store"
-    )
-    
-    # Create a retriever
-    retriever = vector_store.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 2}
-    )
-    
-    return retriever
+    with tracer.start_as_current_span("prepare_retriever") as prepare_retriever:
+        # Initialize embeddings
+        hardware = get_hardware()
+        with tracer.start_as_current_span("embeddings", links=[trace.Link(prepare_retriever.get_span_context())]):
+            embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model_name,
+                model_kwargs={"device": hardware}
+                )
+        
+        # Create text chunks
+        with tracer.start_as_current_span("chunks", links=[trace.Link(prepare_retriever.get_span_context())]):
+            chunks = extract_data(get_doc_dir() if file_path is None else file_path)
+            
+        with tracer.start_as_current_span("vector_store", links=[trace.Link(prepare_retriever.get_span_context())]):
+            vector_store = get_vector_store(
+                chunks=chunks,
+                embeddings=embeddings,
+                cache_dir=get_root_dir() + "rag-pipeline/vector_store"
+            )
+        
+        # Create a retriever
+        with tracer.start_as_current_span("retriever", links=[trace.Link(prepare_retriever.get_span_context())]):
+            retriever = vector_store.as_retriever(
+                search_type="similarity",
+                search_kwargs={"k": 2}
+            )
+        
+        return retriever
 
 if __name__ == "__main__":
     retriever = prepare_retriever()
