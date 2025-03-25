@@ -2,7 +2,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
-from main import app, model_state
+from main import app, model_state, load_llm
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
@@ -86,3 +86,19 @@ def test_chat_endpoint(test_client):
     
     assert response.status_code == 200
     assert response.json() == {"response": "Paris"}
+    
+@patch("utils.snapshot_download")
+@patch("utils.AutoModelForCausalLM.from_pretrained")
+def test_load_llm(mock_from_pretrained, mock_snapshot):
+    # Mock model loading
+    mock_from_pretrained.return_value = MagicMock()
+    mock_snapshot.return_value = None
+
+    model_state.llm_loaded = False
+
+    load_llm()
+    assert model_state.llm_loaded is True
+
+    mock_from_pretrained.side_effect = Exception("Load failed")
+    load_llm()
+    assert model_state.llm_loaded is False

@@ -3,8 +3,8 @@ import time
 from threading import Thread
 from unittest.mock import patch, MagicMock
 from utils import (
-    get_hardware, get_model_dir, get_doc_dir, ModelState, load_llm,
-    monitor_memory_usage, model_state
+    get_hardware, get_model_dir, get_doc_dir, ModelState,
+    monitor_memory_usage
 )
 
 @pytest.fixture(autouse=True)
@@ -46,20 +46,4 @@ def test_monitor_memory_usage():
     thread.start()
     time.sleep(0.5)
     assert thread.is_alive()
-    
-@patch("utils.snapshot_download")
-@patch("utils.AutoModelForCausalLM.from_pretrained")
-def test_load_llm(mock_from_pretrained, mock_snapshot):
-    # Mock model loading
-    mock_from_pretrained.return_value = MagicMock()
-    mock_snapshot.return_value = None
-
-    model_state.llm_loaded = False
-
-    load_llm()
-    assert model_state.llm_loaded is True
-
-    mock_from_pretrained.side_effect = Exception("Load failed")
-    load_llm()
-    assert model_state.llm_loaded is False
     

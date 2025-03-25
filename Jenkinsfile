@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
-        BRANCH = 'dev-cicd'
+        BRANCH = 'features'
         SERVICE_NAME = 'tiny-llm-agent'
         PYTHON_PATH = '/rag-pipeline/src'
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')
@@ -25,7 +25,7 @@ pipeline {
                     docker exec python bash -c "\
                     cd rag-pipeline && \
                     pip install --no-cache-dir -r requirements.txt && \
-                    export PYTHONPATH=${PYTHON_PATH} DISABLE_TRACING=true && \
+                    export PYTHONPATH=${PYTHON_PATH} OTEL_SDK_DISABLED=true && \
                     pytest --cov=src \
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
