@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.backend.service.targetPort }}
+          volumeMounts:
+            - name: {{ .Values.storage.modelStorage.name }}
+              mountPath: {{ .Values.storage.modelStorage.mountPath }}
+            - name: {{ .Values.storage.vectorStoreStorage.name }}
+              mountPath: {{ .Values.storage.vectorStoreStorage.mountPath }}
+
+      volumes:
+        - name: {{ .Values.storage.modelStorage.name }}
+          emptyDir: {}
+        - name: {{ .Values.storage.vectorStoreStorage.name }}
+          emptyDir: {}

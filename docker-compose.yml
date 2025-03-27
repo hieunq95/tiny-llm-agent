@@ -1,0 +1,111 @@
+services:
+  rag-pipeline: 
+      build: 
+        context: rag-pipeline/
+      env_file: .env
+      image: "${RAG_IMAGE_NAME}:${RAG_IMAGE_TAG}"
+      container_name: "${RAG_CONTAINER_NAME}"
+      ports:
+        - "${RAG_PORT}:${RAG_PORT}"
+      volumes:
+        - ./rag-pipeline/models:/rag-pipeline/models
+        - ./rag-pipeline/examples:/rag-pipeline/examples
+        - ./rag-pipeline/vector_store:/rag-pipeline/vector_store
+      networks:
+        - local-net
+      environment:
+        - OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT}"
+        - OTEL_SERVICE_NAME="${RAG_CONTAINER_NAME}"
+        - OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}"
+        - OTEL_METRICS_EXPORTER=none
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+        interval: 20s
+        timeout: 10s
+        retries: 25
+        start_period: 60s
+      depends_on:
+        - jaeger
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
+    env_file: .env
+    container_name: ${PROMETHEUS_CONTAINER_NAME}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
+    networks:
+      - local-net
+    depends_on:
+      - rag-pipeline
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG}
+    env_file: .env
+    container_name: ${GRAFANA_CONTAINER_NAME}
+    ports:
+      - "${GRAFANA_PORT}:${GRAFANA_PORT}"
+    networks:
+      - local-net
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
+  streamlit:
+    build: 
+      context: streamlit/
+    env_file: .env
+    image: "${STREAMLIT_IMAGE_NAME}:${STREAMLIT_IMAGE_TAG}"
+    container_name: "${STREAMLIT_CONTAINER_NAME}"
+    ports:
+      - "${STREAMLIT_PORT}:${STREAMLIT_PORT}"
+    expose:
+      - "STREAMLIT_PORT"
+    networks:
+      - local-net
+    depends_on: 
+      rag-pipeline:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 25
+      start_period: 60s
+
+  jaeger:
+    image: jaegertracing/all-in-one:${JAEGER_IMAGE_TAG}
+    env_file: .env
+    container_name: "${JAEGER_CONTAINER_NAME}"
+    ports:
+      - "${JAEGER_PORT}:${JAEGER_PORT}"
+      - "${JAEGER_PORT_UDP}:${JAEGER_PORT_UDP}/udp"
+      - "${JAEGER_COLLECTOR_PORT}:${JAEGER_COLLECTOR_PORT}"
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=${COLLECTOR_ZIPKIN_HOST_PORT}
+      - USE_OPENMP=1
+      - OMP_NUM_THREADS=1
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - local-net
+
+  nginx:
+    build: 
+      context: nginx/
+    env_file: .env
+    image: "${NGINX_IMAGE_NAME}:${NGINX_IMAGE_TAG}"
+    container_name: "${NGINX_CONTAINER_NAME}"
+    ports:
+      - "${NGINX_PORT}:80"  
+    networks:
+      - local-net
+    depends_on:
+      - streamlit
+
+networks:
+  local-net:
+
+volumes:
+  grafana-data:

@@ -1,0 +1,24 @@
+services:
+  jenkins:
+    build: .
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../Jenkinsfile:/var/jenkins_home/Jenkinsfile
+    privileged: true
+  
+  python:
+    image: python:3.10.16-slim
+    container_name: python
+    restart: unless-stopped
+    volumes:
+      - ../rag-pipeline:/rag-pipeline  # Mount project directory for tests
+    command: sh -c "apt-get update && apt-get install -y curl && apt-get install -y git && tail -f /dev/null"
+
+volumes:
+  jenkins_home:
