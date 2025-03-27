@@ -9,12 +9,14 @@ A **FastAPI + Streamlit** based **Retrieval-Augmented Generation (RAG) chatbot**
 **Architecture** of the platform is as follows:   
 <img src="assets/architecture.png" alt="architecture" width="1000"/>  
 
-The main building blocks of the system depicted in the image can be described as follows: 
-- A user sends a query, which is processed through embedding and retrieval vectors.   
-- The system retrieves relevant data from the FAISS vector database and monitors the process.  
-- The response is displayed to the user, while monitoring and tracing are handled by tools like Jaeger Tracing, Prometheus, and Grafana.  
-- Developers push code to GitHub, triggering a CI/CD pipeline via Jenkins for building and testing.  
-- Docker images are pushed to Docker Hub and pulled by the application cluster on Google Cloud, which runs on Kubernetes. The application is accessible via Streamlit UI on port 8501 with an external IP.
+The MLOps system illustrated in the image operates through two distinct pipelines:  
+- **For developers**, the workflow begins with pushing code to a source control system (step 1), triggering a CI/CD pipeline (steps 2). The CI/CD pipeline builds, tests, and deploys containers locally. After that, it pushes Docker images to Docker Hub registry (step 3). 
+These images are then pulled and managed in a Kubernetes cluster on Google Cloud, making the application accessible via a Streamlit UI.  
+- **For users**, interactions start with a query from user (step 1), which routes requests through an API gateway (steps 2). The system generates embeddings (step 3), retrieves relevant vectors from the FAISS database (step 4), and returns a response (step 5). The API gateway finally forward the response and display it via Streamlit UI. 
+
+**Mornitoring services** are managed by developers using `Jaeger`, `Prometheus`, and `Grafana`, ensuring observability for users.
+
+
   
 ## 📌 Features
 ✅ **FastAPI backend** to handle local LLM inference and document retrieval.  
@@ -102,13 +104,14 @@ Backend (FastAPI) → http://localhost:8000/docs
 Frontend (Streamlit) → http://localhost:8501
 Monitoring (Prometheus) → http://localhost:9090
 Dashboard (Grafana) → http://localhost:3000  
-Distributed Tracing (Jeager Tracing) → http://localhost:16686  
+Distributed Tracing (Jeager Tracing) → http://localhost:16686 
+Proxy server (Nginx) → http://localhost:8080 
 ```
 
 #### To stop:
 
 ```bash
-docker-compose down
+docker-compose down -v
 ```
 
 #### To rebuild:  
@@ -151,8 +154,10 @@ Use Jaeger tracing to monitor and troubleshoot request flows of the services.
 ![](assets/jaeger.png)
 
 ## 3. CI/CD
-### 
-Details on building CI/CD pipeline with Jenkins can be found in [jenkins](jenkins/README.md) directory.
+The CI/CD pipeline is triggered by GitHub commits from developers. It will run code coverage check with `pytest`. If the code coverage pass the threshold (80%), it uploads code coverage report to [Codecov.io](https://about.codecov.io/). An example of the log output from Jenkins pipeline is shown in the image below. 
+Details on building CI/CD pipeline with Jenkins can be found in [jenkins](jenkins/README.md) directory. 
+
+![](assets/cicd.png)
 
 ## 4. Google Cloud Deployment
 - Details about deploying all services on a Google Cloud Platform (GCP) can be found in the [kubernetes](kubernetes/README.md) directory.  

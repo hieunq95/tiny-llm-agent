@@ -15,16 +15,20 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
 # Initialize OpenTelemetry
-set_tracer_provider(
-    TracerProvider(resource=Resource.create({SERVICE_NAME: "rag-pipeline-service"}))
-)
-tracer = get_tracer_provider().get_tracer("rag-pipeline", "0.1.1")
-jaeger_exporter = JaegerExporter(
-    collector_endpoint="http://jaeger:14268/api/traces"
-    # collector_endpoint="http://jaeger:4317"
-)
-span_processor = BatchSpanProcessor(jaeger_exporter)
-get_tracer_provider().add_span_processor(span_processor)
+if os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true":
+    set_tracer_provider(
+        TracerProvider(resource=Resource.create({SERVICE_NAME: "rag-pipeline-service"}))
+    )
+    tracer = get_tracer_provider().get_tracer("rag-pipeline", "0.1.1")
+    jaeger_exporter = JaegerExporter(
+        collector_endpoint="http://jaeger:14268/api/traces"
+    )
+    span_processor = BatchSpanProcessor(jaeger_exporter)
+    get_tracer_provider().add_span_processor(span_processor)
+else:
+    # Disable tracing
+    trace._set_tracer_provider(None)
+    logging.info("Jaeger tracing disabled")
 
 def get_hardware() -> str:
     """Get hardware available for inference.

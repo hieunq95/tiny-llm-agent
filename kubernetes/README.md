@@ -47,14 +47,19 @@ Go to [https://hub.docker.com/](https://hub.docker.com/), log in, and manually c
 Assuming we are at `tiny-llm-agent/` root directory, to build and push images to Docker Hub:  
 ```bash
 cd rag-pipeline  
-docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-rag-pipeline:v0.1.0 --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-rag-pipeline:v0.1.1 --push .
 ```
 
 ```bash
 cd streamlit  
 docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-streamlit:v0.1.0 --push .
-```
+```  
 
+```bash
+cd nginx  
+docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-nginx:v0.1.0 --push .
+```
+ - The above steps just build and push images of the backend (rag-pipeline), frontend (streamlit), and proxy (nginx) to Docker Hub. The `--platform` parameter is to support multi-platform build in Docker `buildx`. This will take time, depends on the network connection. 
 ---
 
 ## 2. Local Deployment with Minikube
@@ -69,17 +74,16 @@ Before deploying all services (LLM chatbot backend, frontend, and monitoring ser
 ### Create a new Kubernetes cluster
 To create a new Kubernetes cluster, run the command:  
 ```bash
-minikube start --cpus 4 --memory 4096
+minikube start --cpus=max --memory=max
 ```  
 To check the status of the cluster, run:
 ```bash 
 minikube status
 ```
-If there are stopped services, restart `minikube`:
+To stop `minikube`:
 ```bash
 minikube stop
 minikube delete
-minikube start
 ```  
 
 ### Create the Namespace
@@ -98,7 +102,7 @@ kubectl get namespaces
 ```
 
 ### Apply the Deployment
-To apply the deployment:
+Let's quickly test the frontend and backend services without deploying a proxy server. First, apply the deployment:
 ```bash
 kubectl apply -f deployment.yaml
 ```  
@@ -117,36 +121,7 @@ kubectl apply -f frontend-service.yaml
 ```
 
 ### Monitoring  
-#### Check resource usage  
-Install Metrics Server to use command `kubectl top pod` that check resource usage.  
-For `minikube`, install using:  
-```bash
-minikube addons enable metrics-server
-```  
-For a general Kubernetes setup, install using:  
-```bash
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-```  
-After installation, wait for the metrics server to start:  
-```bash
-kubectl wait --for=condition=available deployment/metrics-server -n kube-system --timeout=90s
-```
-Verify metrics server:  
-```bash
-kubectl get apiservices | grep metrics
-```
-Now, check the resources:  
-```bash
-kubectl top pod -n model-serving
-```  
-Output looks like:
-```
-NAME                            CPU(cores)   MEMORY(bytes)   
-mydeployment-8448897868-qbx95   5m           345Mi
-```
-where `mydeployment-8448897868-qbx95` is the `pod_name`.
-
-Check logs:
+#### Check logs:
 ```bash
 kubectl logs -n model-serving pod_name -c backend
 kubectl logs -n model-serving pod_name -c frontend
@@ -189,6 +164,8 @@ helm-chart/
 │   ├── backend-service.yaml        # Backend service definition
 │   ├── frontend-deployment.yaml    # Frontend deployment definition
 │   ├── frontend-service.yaml       # Frontend service definition
+│   ├── proxy-deployment.yaml       # Proxy deployment definition
+│   ├── proxy-service.yaml          # Proxy service definition
 │   ├── namespace.yaml              # Namespace definition
 │── Chart.yaml                      # Helm chart metadata
 │── values.yaml                     # Configuration values
@@ -196,14 +173,15 @@ helm-chart/
 
 ### Components
 The components of the `helm-chart`:
-- **Backend**: API service that processes requests  
-- **Frontend**: Web interface for users  
+- **Backend**: API service that processes requests.  
+- **Frontend**: Web interface for users.    
+- **Proxy**: Reverse proxy service for serving external requests from users.   
 
 ### Usage
 
 Assuming the `minikube` cluster is running. Otherwise, start a new cluster using command:  
 ```bash
-minikube start --cpus 4 --memory 4096
+minikube start --cpus=max --memory=max
 ```
 To deploy the services locally, using `helm`:  
 ```bash
@@ -230,7 +208,8 @@ Edit the `values.yaml` file to customize the deployment. Key configurations incl
 - Service types  
 
 ### Access points  
-Similar to `kubectl`, let's use port-forward to access to the services. :
+#### For developers
+Let's use port-forward to access to the internal services:
 ```bash
 kubectl port-forward -n model-serving svc/rag-pipeline 8000:8000
 kubectl port-forward -n model-serving svc/streamlit 8501:8501
@@ -238,6 +217,28 @@ kubectl port-forward -n model-serving svc/streamlit 8501:8501
 Then, visit in browser:  
 - Backend: `http://localhost:8000/docs`
 - Frontend: `http://localhost:8501`
+
+#### For users
+Users need to access the services via a proxy server (`nginx`). To expose the proxy port, run:  
+```bash
+minikube service proxy -n model-serving     
+```
+The log looks like this:
+```
+|---------------|-------|-------------|---------------------------|
+|   NAMESPACE   | NAME  | TARGET PORT |            URL            |
+|---------------|-------|-------------|---------------------------|
+| model-serving | proxy |          80 | http://192.168.49.2:30080 |
+|---------------|-------|-------------|---------------------------|
+🏃  Starting tunnel for service proxy.
+|---------------|-------|-------------|------------------------|
+|   NAMESPACE   | NAME  | TARGET PORT |          URL           |
+|---------------|-------|-------------|------------------------|
+| model-serving | proxy |             | http://127.0.0.1:62587 |
+|---------------|-------|-------------|------------------------|
+```  
+
+Then, visit in browser: `http://192.168.49.2:30080` or `http://127.0.0.1:62587`. Both access methods should be working.  
 
 ---
 

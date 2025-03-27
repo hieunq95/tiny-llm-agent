@@ -6,7 +6,7 @@ deployment:
 backend:
   image:
     repository: hieunq95/tiny-llm-agent-rag-pipeline
-    tag: v0.1.0  
+    tag: v0.1.1
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -16,10 +16,16 @@ backend:
       memory: 3Gi
       cpu: 3
   service:
-    type: NodePort # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
+    type: ClusterIP # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
     port: 8000
     targetPort: 8000
-    nodePort: 30080
+  environment:
+    OTEL_EXPORTER_OTLP_ENDPOINT: "none" # Disable tracing
+    OTEL_TRACES_EXPORTER: "none"  
+    OTEL_METRICS_EXPORTER: "none"
+    OTEL_SDK_DISABLED: "true"
+    OTEL_DISABLED: "true"
+    
   livenessProbe:
     httpGet:
       path: /health
@@ -45,16 +51,34 @@ frontend:
     pullPolicy: IfNotPresent
   resources:
     requests:
-      memory: 300Mi
+      memory: 200Mi
       cpu: 0.1
     limits:
-      memory: 500Mi
+      memory: 300Mi
       cpu: 0.3
   service:
-    type: NodePort # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
+    type: ClusterIP # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
     port: 8501
     targetPort: 8501
-    nodePort: 30081
+
+proxy:
+  enabled: true
+  image:
+    repository: hieunq95/tiny-llm-agent-nginx
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 0.1
+    limits:
+      memory: 200Mi
+      cpu: 0.2
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30080
 
 storage:
   modelStorage:
