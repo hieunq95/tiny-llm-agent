@@ -29,7 +29,7 @@ pipeline {
                     pytest --cov=src \
                            --cov-report=xml:coverage.xml \
                            --junitxml=test-reports/results.xml \
-                           test/
+                           tests/
                            "
                 '''
                 // Check if coverage passes the threshold

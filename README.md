@@ -7,11 +7,10 @@ A **FastAPI + Streamlit** based **Retrieval-Augmented Generation (RAG) chatbot**
 **Disclaimer**: The `tiny-llm-agent` is provided for the demonstration purpose. It is implemented to run on CPU to ensure compatibility with most hardware devices. Additionally, the response length is limited to a fixed number of tokens because the small LLM cannot efficiently handle very long contexts. Expanding beyond these limitations can be achieved by using a larger model (e.g., Qwen2.5-7B) and enabling GPU processing for faster responses. See [rag-pipeline/notebooks/poc-rag-code.ipynb](rag-pipeline/notebooks/poc-rag-code.ipynb), [rag-pipeline/src/main.py](rag-pipeline/src/main.py), and [rag-pipeline/Dockerfile](rag-pipeline/Dockerfile) for detailed implementation and configuration.
 
 **Architecture** of the platform is as follows:   
-<img src="assets/architecture.png" alt="architecture" width="1000"/>  
+<img src="assets/architecture.png" alt="architecture" width="1024"/>  
 
 The MLOps system illustrated in the image operates through two distinct pipelines:  
-- **For developers**, the workflow begins with pushing code to a source control system (step 1), triggering a CI/CD pipeline (steps 2). The CI/CD pipeline builds, tests, and deploys containers locally. After that, it pushes Docker images to Docker Hub registry (step 3). 
-These images are then pulled and managed in a Kubernetes cluster on Google Cloud, making the application accessible via a Streamlit UI.  
+- **For developers**, the workflow begins with pushing code to a source control system (step 1), triggering a CI/CD pipeline (steps 2). The CI/CD pipeline builds, tests, and deploys containers locally. After that, it pushes Docker images to Docker Hub registry (step 3). These images are then pulled in a Kubernetes cluster on Google Cloud (step 4). Once the services start, the LLM will be downloaded from HuggingFace model registry and stored in the cluster (step 5).  
 - **For users**, interactions start with a query from user (step 1), which routes requests through an API gateway (steps 2). The system generates embeddings (step 3), retrieves relevant vectors from the FAISS database (step 4), and returns a response (step 5). The API gateway finally forward the response and display it via Streamlit UI. 
 
 **Mornitoring services** are managed by developers using `Jaeger`, `Prometheus`, and `Grafana`, ensuring observability for users.
@@ -52,6 +51,8 @@ tiny-llm-agent/
 │ ├─── main.py                # Streamlit UI logic  
 │ ├─── requirements.txt       # Frontend dependencies  
 │ ├─── Dockerfile             # Frontend Docker configuration  
+│  
+├─ nginx/                     # API gateway configuration
 │
 ├─ grafana/                   # Monitoring service (Grafana)  
 │
@@ -162,6 +163,6 @@ Details on building CI/CD pipeline with Jenkins can be found in [jenkins](jenkin
 ## 4. Google Cloud Deployment
 - Details about deploying all services on a Google Cloud Platform (GCP) can be found in the [kubernetes](kubernetes/README.md) directory.  
 
-- For a quick demo of the `tiny-llm-agent` chatbot on GCP, see video recap below. For the full video demo, check this [YouTube](https://www.youtube.com/watch?v=v5vP3bfA6qU) link.  
+- For a quick demo of the `tiny-llm-agent` chatbot on GCP, see video recap below. For the full video demo, check this [YouTube](https://www.youtube.com/watch?v=MBjAibP9fs8) link.  
 
 ![](assets/gcp-demo.gif)

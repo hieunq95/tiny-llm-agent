@@ -41,7 +41,7 @@ docker login
 ```
 
 - Step 2: Create a repository on Docker Hub
-Go to [https://hub.docker.com/](https://hub.docker.com/), log in, and manually create a repository, e.g., Namespace `model-serving` and repositories name`tiny-llm-agent-rag-pipeline` and `tiny-llm-agent-streamlit`.
+Go to [https://hub.docker.com/](https://hub.docker.com/), log in, and manually create a repository, e.g., Namespace `model-serving` and repositories name`tiny-llm-agent-rag-pipeline`,  `tiny-llm-agent-streamlit`, and `tiny-llm-agent-nginx`.  
 
 - Step 3: Build and push Docker images to Docker Hub.
 Assuming we are at `tiny-llm-agent/` root directory, to build and push images to Docker Hub:  
@@ -59,7 +59,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agen
 cd nginx  
 docker buildx build --platform linux/amd64,linux/arm64 -t hieunq95/tiny-llm-agent-nginx:v0.1.4 --push .
 ```
- - The above steps just build and push images of the backend (rag-pipeline), frontend (streamlit), and proxy (nginx) to Docker Hub. The `--platform` parameter is to support multi-platform build in Docker `buildx`. This will take time, depends on the network connection. 
+ - The above steps just build and push images of the backend (rag-pipeline), frontend (streamlit), and proxy (nginx) to Docker Hub. The `--platform` parameter is for supporting multi-platform build in Docker `buildx`. This will take time, depends on the network connection. 
 ---
 
 ## 2. Local Deployment with Minikube
@@ -287,11 +287,11 @@ The output shows something like this:
 NAME           TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
 rag-pipeline   LoadBalancer   34.118.228.91    34.132.15.181   8000:30082/TCP   55s
 streamlit      LoadBalancer   34.118.239.245   34.58.203.53    8501:30080/TCP   55s  
-nginx          LoadBalancer   34.118.239.247   34.58.203.54    8080:30081/TCP   55s
+nginx          LoadBalancer   34.118.239.247   34.123.188.143  80:30081/TCP     55s
 ```  
 Access to the services using the external IP address:
 - Frontend: `34.58.203.53:8501`  
 - Backend (FastAPI): `34.132.15.181:8000/docs`
-- API gateway (NGINX): `34.58.203.54:8080`  
+- API gateway (NGINX): `34.123.188.14:80`  
 
 ---
