@@ -2,10 +2,8 @@ import pytest
 import time
 from threading import Thread
 from unittest.mock import patch, MagicMock
-from utils import (
-    get_hardware, get_model_dir, get_doc_dir, ModelState,
-    monitor_memory_usage
-)
+from utils import get_hardware, get_model_dir, get_doc_dir, monitor_memory_usage
+
 
 @pytest.fixture(autouse=True)
 def disable_tracing():
@@ -32,13 +30,6 @@ def test_get_root_dir():
 def test_get_doc_dir():
     doc_dir = get_doc_dir()
     assert "rag-pipeline/examples/example.pdf" in doc_dir
-    
-def test_model_state():
-    state = ModelState()
-    assert state.llm_loaded is False
-    assert state.qa_pipeline is None
-    assert state.model is None
-    
 
 def test_monitor_memory_usage():
     thread = Thread(target=monitor_memory_usage, kwargs={"interval": 0.1})

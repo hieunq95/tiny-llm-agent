@@ -1,34 +1,48 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
-  namespace: {{ .Values.namespace }}
+  name: rag-pipeline
 spec:
-  replicas: {{ .Values.deployment.replicas }}
+  replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: rag-pipeline
   template:
     metadata:
       labels:
-        app: backend
+        app: rag-pipeline
     spec:
       containers:
-        - name: backend
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
-          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
-          resources:
-            {{- toYaml .Values.backend.resources | nindent 12 }}
-          ports:
-            - containerPort: {{ .Values.backend.service.targetPort }}
-          volumeMounts:
-            - name: {{ .Values.storage.modelStorage.name }}
-              mountPath: {{ .Values.storage.modelStorage.mountPath }}
-            - name: {{ .Values.storage.vectorStoreStorage.name }}
-              mountPath: {{ .Values.storage.vectorStoreStorage.mountPath }}
-
+      - name: rag-pipeline
+        image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.backend.port }}
+        env:
+        - name: OTEL_SDK_DISABLED
+          value: "{{ .Values.backend.env.OTEL_SDK_DISABLED }}"
+        volumeMounts:
+        - name: models-volume
+          mountPath: /rag-pipeline/models
+        - name: examples-volume
+          mountPath: /rag-pipeline/examples
+        - name: vector-store-volume
+          mountPath: /rag-pipeline/vector_store
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.backend.port }}
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 25
       volumes:
-        - name: {{ .Values.storage.modelStorage.name }}
-          emptyDir: {}
-        - name: {{ .Values.storage.vectorStoreStorage.name }}
-          emptyDir: {}
+      - name: models-volume
+        hostPath:
+          path: {{ .Values.backend.volumes.models.hostPath }}
+      - name: examples-volume
+        hostPath:
+          path: {{ .Values.backend.volumes.examples.hostPath }}
+      - name: vector-store-volume
+        hostPath:
+          path: {{ .Values.backend.volumes.vectorStore.hostPath }}

@@ -46,7 +46,7 @@ def setup_pipeline(local_dir: str, file_path: str = None, model: PreTrainedModel
         # Define the prompt template
         prompt_template = """Answer based on context:\n{context}\nQuestion: {question}\nAnswer:"""
         prompt = PromptTemplate(
-            input_variables=["contenxt", "question"],
+            input_variables=["context", "question"],
             template=prompt_template
         )
         

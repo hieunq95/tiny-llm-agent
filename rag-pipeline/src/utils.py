@@ -1,9 +1,9 @@
 import os
+import re
 import torch
 import psutil
 import time
 import logging
-from pathlib import Path
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM
 from prometheus_client import Counter, Histogram, Gauge
@@ -15,20 +15,15 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import get_tracer_provider, set_tracer_provider
 
 # Initialize OpenTelemetry
-if os.getenv("OTEL_SDK_DISABLED", "false").lower() != "true":
-    set_tracer_provider(
-        TracerProvider(resource=Resource.create({SERVICE_NAME: "rag-pipeline-service"}))
-    )
-    tracer = get_tracer_provider().get_tracer("rag-pipeline", "0.1.1")
-    jaeger_exporter = JaegerExporter(
-        collector_endpoint="http://jaeger:14268/api/traces"
-    )
-    span_processor = BatchSpanProcessor(jaeger_exporter)
-    get_tracer_provider().add_span_processor(span_processor)
-else:
-    # Disable tracing
-    trace._set_tracer_provider(None)
-    logging.info("Jaeger tracing disabled")
+set_tracer_provider(
+    TracerProvider(resource=Resource.create({SERVICE_NAME: "rag-pipeline-service"}))
+)
+tracer = get_tracer_provider().get_tracer("rag-pipeline", "0.1.0")
+jaeger_exporter = JaegerExporter(
+    collector_endpoint="http://jaeger:14268/api/traces"
+)
+span_processor = BatchSpanProcessor(jaeger_exporter)
+get_tracer_provider().add_span_processor(span_processor)
 
 def get_hardware() -> str:
     """Get hardware available for inference.
@@ -70,26 +65,11 @@ def get_doc_dir() -> str:
     doc_dir = os.path.join(get_root_dir(), "rag-pipeline/examples/example.pdf")
     return doc_dir
 
-class ModelState:
-    def __init__(self):
-        """State holder for the local LLM
-        """
-        self.llm_loaded = False
-        self.qa_pipeline = None
-        self.model = None
-
 # Prometheus metrics
 REQUEST_COUNT = Counter("chatbot_requests_total", "Total requests to chatbot")
 LATENCY = Histogram("chatbot_request_latency_seconds", "Chatbot request latency")
 MODEL_LOAD_TIME = Histogram("chatbot_model_load_time_seconds", "Time to load the local LLM in secods")
 MEMORY_USAGE = Gauge("chatbot_memory_usage_bytes", "Memory usage in bytes for chatbot process")
-
-# LLM global variables
-model_state = ModelState()
-
-# Define paths
-UPLOAD_DIR = Path("./uploaded_pdfs")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Initialize logger
 logging.basicConfig(level=logging.INFO)
@@ -108,3 +88,11 @@ def monitor_memory_usage(interval: int=5):
         except Exception as e:
             logger.error(f"Memory monitoring error: {e}", exc_info=True)
         time.sleep(interval)
+        
+def secure_filename(filename: str) -> str:
+    """Secure filename sanitizer
+    """
+    # Remove path components and special characters
+    clean = re.sub(r'(?u)[^-\w.]', '', filename.split("/")[-1])
+    # Prevent empty filenames and hidden files
+    return clean.lstrip('.') or 'document'

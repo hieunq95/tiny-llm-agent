@@ -1,6 +1,5 @@
 apiVersion: v2
 name: tiny-llm-agent
-description: A Helm chart for RAG pipeline with frontend and backend
-type: application
+description: A Helm chart for Tiny LLM Agent
 version: 0.1.0
-appVersion: "1.0.0"
+appVersion: "0.1.0"

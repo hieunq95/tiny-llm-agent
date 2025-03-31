@@ -2,6 +2,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
+from unittest import TestCase
 from main import app, model_state, load_llm
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -24,7 +25,7 @@ def test_client():
 def reset_mocks():
     # Reset model state before each test
     model_state.llm_loaded = False
-    model_state.qa_pipeline = None
+    model_state.qa_pipelines = {}
     model_state.model = MagicMock()
     yield
     
@@ -76,8 +77,8 @@ def test_upload_pdf(mock_setup, test_client):
     
 def test_chat_endpoint(test_client):
     model_state.llm_loaded = True
-    model_state.qa_pipeline = MagicMock()
-    model_state.qa_pipeline.invoke.return_value = {"result": "Answer: Paris"}
+    model_state.qa_pipelines['test_user'] = MagicMock()
+    model_state.qa_pipelines.get('test_user').invoke.return_value = {"result": "Answer: Paris"}
     
     response = test_client.post(
         "/api/chat?user_id=test_user",

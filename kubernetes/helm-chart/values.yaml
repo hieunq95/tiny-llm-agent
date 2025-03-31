@@ -1,89 +1,54 @@
-namespace: model-serving
-deployment:
-  name: mydeployment
-  replicas: 1  # use `2` replicas for cloud deployment (optional)
-
 backend:
   image:
-    repository: hieunq95/tiny-llm-agent-rag-pipeline
-    tag: v0.1.1
+    name: hieunq95/tiny-llm-agent-rag-pipeline
+    tag: v0.1.4
     pullPolicy: IfNotPresent
+  port: 8000
+  nodePort: 30082
   resources:
     requests:
-      memory: 2Gi
+      memory: 3Gi
       cpu: 2
     limits:
-      memory: 3Gi
+      memory: 6Gi
       cpu: 3
-  service:
-    type: ClusterIP # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
-    port: 8000
-    targetPort: 8000
-  environment:
-    OTEL_EXPORTER_OTLP_ENDPOINT: "none" # Disable tracing
-    OTEL_TRACES_EXPORTER: "none"  
-    OTEL_METRICS_EXPORTER: "none"
+  env:
     OTEL_SDK_DISABLED: "true"
-    OTEL_DISABLED: "true"
-    
-  livenessProbe:
-    httpGet:
-      path: /health
-      port: 8000
-    initialDelaySeconds: 300 # 5 minutes to allow for model download
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 8000
-    initialDelaySeconds: 300 # 5 minutes to allow for model download
-    periodSeconds: 30
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 3
+  volumes:
+    models:
+      hostPath: /rag-pipeline/models
+    examples:
+      hostPath: /rag-pipeline/examples
+    vectorStore:
+      hostPath: /rag-pipeline/vector_store
 
 frontend:
   image:
-    repository: hieunq95/tiny-llm-agent-streamlit
-    tag: v0.1.0
+    name: hieunq95/tiny-llm-agent-streamlit
+    tag: v0.1.4
     pullPolicy: IfNotPresent
-  resources:
+  port: 8501
+  nodePort: 30080
+  resources: 
     requests:
-      memory: 200Mi
-      cpu: 0.1
-    limits:
-      memory: 300Mi
-      cpu: 0.3
-  service:
-    type: ClusterIP # use `NodePort` (local deployment) or `LoadBalancer` (cloud deployment)
-    port: 8501
-    targetPort: 8501
-
-proxy:
-  enabled: true
-  image:
-    repository: hieunq95/tiny-llm-agent-nginx
-    tag: v0.1.0
-    pullPolicy: IfNotPresent
-  resources:
-    requests:
-      memory: 100Mi
-      cpu: 0.1
-    limits:
-      memory: 200Mi
+      memory: 256Mi 
       cpu: 0.2
-  service:
-    type: NodePort
-    port: 80
-    targetPort: 80
-    nodePort: 30080
+    limits:
+      memory: 512Mi 
+      cpu: 1
 
-storage:
-  modelStorage:
-    name: model-storage
-    mountPath: /rag-pipeline/models
-  vectorStoreStorage:
-    name: vector-store-storage
-    mountPath: /rag-pipeline/vector_store
+nginx:
+  image:
+    name: hieunq95/tiny-llm-agent-nginx
+    tag: v0.1.4
+    pullPolicy: IfNotPresent
+  containerPort: 80
+  servicePort: 80
+  nodePort: 30081
+  resources: 
+    requests:
+      memory: 64Mi  
+      cpu: 0.1  
+    limits:
+      memory: 128Mi
+      cpu: 0.2 

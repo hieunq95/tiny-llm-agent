@@ -2,16 +2,34 @@ import os
 import shutil
 import time
 import threading
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from data_pipeline import setup_pipeline
 from model_setup import load_model
-from utils import *
+from utils import (get_model_dir, trace, tracer, logger, 
+                   MODEL_LOAD_TIME, REQUEST_COUNT, LATENCY, 
+                   monitor_memory_usage, secure_filename)
 
 class ChatRequest(BaseModel):
     messages: str
+    
+class ModelState:
+    def __init__(self):
+        """State holder for the local LLM
+        """
+        self.llm_loaded = False
+        self.qa_pipelines = {}
+        self.model = None
+        
+# LLM global variables
+model_state = ModelState()
+
+# Define paths
+UPLOAD_DIR = Path("./uploaded_pdfs")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI()
 FastAPIInstrumentor.instrument_app(app)
@@ -65,7 +83,8 @@ async def upload_pdf(user_id: str, file: UploadFile = File(...)):
             raise HTTPException(status_code=503, detail="LLM is still loading. Please wait.")
         try:
             # Save file locally
-            file_path = UPLOAD_DIR / f"{user_id}_{file.filename}"
+            file_name = secure_filename(file.filename)
+            file_path = UPLOAD_DIR / f"{user_id}_{file_name}"
             os.makedirs("./uploaded_pdfs", exist_ok=True)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
@@ -75,7 +94,7 @@ async def upload_pdf(user_id: str, file: UploadFile = File(...)):
             with tracer.start_as_current_span(
                 "setup_pipeline", links=[trace.Link(upload_pdf.get_span_context())]
             ):
-                model_state.qa_pipeline = setup_pipeline(local_dir=get_model_dir(), file_path=str(file_path), model=model_state.model)
+                model_state.qa_pipelines[user_id] = setup_pipeline(local_dir=get_model_dir(), file_path=str(file_path), model=model_state.model)
             logger.info("Retriever updated!")
             return {"message": "PDF processed and stored successfully", "file_path": file_path}
 
@@ -101,16 +120,30 @@ def chat_endpoint(user_id: str, request: ChatRequest):
         raise HTTPException(status_code=503, detail="LLM is still loading. Please wait.")
     
     user_pdfs = sorted(UPLOAD_DIR.glob(f"{user_id}_*.pdf"), key=os.path.getmtime, reverse=True)
+    if not user_pdfs: 
+        raise HTTPException(400, "No PDF found for this user. Upload a PDF first.")
     latest_pdf = str(user_pdfs[0])
-    
-    # Ensure retriever is ready
-    if model_state.qa_pipeline is None:
-        raise HTTPException(status_code=503, detail="QA pipeline is not ready.")
-    
     logger.info(f"Processing chat request using PDF: {latest_pdf}")
     
-    response = model_state.qa_pipeline.invoke(request.messages)
-    response_text = response["result"].split("Answer:")[-1].strip()
+    # Get user-specific pipeline
+    qa_pipeline = model_state.qa_pipelines.get(user_id)
+    
+    # Ensure retriever is ready
+    if qa_pipeline is None:
+        logger.info(f"QA pipeline is None")
+        raise HTTPException(status_code=400, detail="QA pipeline is not ready. Upload PDF first")
+    if model_state.model is None:
+            model_state.model = load_model(
+                model_name="Qwen/Qwen2.5-0.5B-Instruct", 
+                local_dir=get_model_dir()
+            )
+    try:
+        logger.info(f"QA pipeline invoke ...")
+        response = qa_pipeline.invoke(request.messages)
+        response_text = response["result"].split("Answer:")[-1].strip()
+    except Exception as e:
+        logger.error(f"Pipeline error: {str(e)}")
+        raise HTTPException(500, "Failed to process request")
     
     LATENCY.observe(time.time() - start_time)
     return {"response": response_text}
