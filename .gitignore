@@ -1,0 +1,14 @@
+.venv
+.DS_Store
+.vscode
+rag-pipeline/models
+rag-pipeline/vector_store
+rag-pipeline/tests/__pycache__
+rag-pipeline/tests/.pytest_cache
+rag-pipeline/src/__pycache__
+rag-pipeline/reports
+rag-pipeline/*.xml
+rag-pipeline/.pytest_cache
+rag-pipeline/.coverage
+rag-pipeline/.coverage.*
+rag-pipeline/test-reports

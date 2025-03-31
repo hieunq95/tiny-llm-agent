@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-pipeline
+  template:
+    metadata:
+      labels:
+        app: rag-pipeline
+    spec:
+      containers:
+      - name: rag-pipeline
+        image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.backend.port }}
+        env:
+        - name: OTEL_SDK_DISABLED
+          value: "{{ .Values.backend.env.OTEL_SDK_DISABLED }}"
+        volumeMounts:
+        - name: models-volume
+          mountPath: /rag-pipeline/models
+        - name: examples-volume
+          mountPath: /rag-pipeline/examples
+        - name: vector-store-volume
+          mountPath: /rag-pipeline/vector_store
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.backend.port }}
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 25
+      volumes:
+      - name: models-volume
+        emptyDir: {}
+      - name: examples-volume
+        emptyDir: {}
+      - name: vector-store-volume
+        emptyDir: {}

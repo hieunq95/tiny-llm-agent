@@ -1,0 +1,54 @@
+backend:
+  image:
+    name: hieunq95/tiny-llm-agent-rag-pipeline
+    tag: v0.1.4
+    pullPolicy: IfNotPresent
+  port: 8000
+  nodePort: 30082
+  resources:
+    requests:
+      memory: 3Gi
+      cpu: 2
+    limits:
+      memory: 6Gi
+      cpu: 3
+  env:
+    OTEL_SDK_DISABLED: "true"
+  volumes:
+    models:
+      hostPath: /rag-pipeline/models
+    examples:
+      hostPath: /rag-pipeline/examples
+    vectorStore:
+      hostPath: /rag-pipeline/vector_store
+
+frontend:
+  image:
+    name: hieunq95/tiny-llm-agent-streamlit
+    tag: v0.1.4
+    pullPolicy: IfNotPresent
+  port: 8501
+  nodePort: 30080
+  resources: 
+    requests:
+      memory: 256Mi 
+      cpu: 0.2
+    limits:
+      memory: 512Mi 
+      cpu: 1
+
+nginx:
+  image:
+    name: hieunq95/tiny-llm-agent-nginx
+    tag: v0.1.4
+    pullPolicy: IfNotPresent
+  containerPort: 80
+  servicePort: 80
+  nodePort: 30081
+  resources: 
+    requests:
+      memory: 64Mi  
+      cpu: 0.1  
+    limits:
+      memory: 128Mi
+      cpu: 0.2 
