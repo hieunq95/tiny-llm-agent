@@ -38,11 +38,8 @@ spec:
           failureThreshold: 25
       volumes:
       - name: models-volume
-        hostPath:
-          path: {{ .Values.backend.volumes.models.hostPath }}
+        emptyDir: {}
       - name: examples-volume
-        hostPath:
-          path: {{ .Values.backend.volumes.examples.hostPath }}
+        emptyDir: {}
       - name: vector-store-volume
-        hostPath:
-          path: {{ .Values.backend.volumes.vectorStore.hostPath }}
+        emptyDir: {}
