@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/hieunq95/tiny-llm-agent.git'
-        BRANCH = 'dev-cicd'
+        BRANCH = 'main'
         SERVICE_NAME = 'tiny-llm-agent'
         PYTHON_PATH = '/rag-pipeline/src'
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')

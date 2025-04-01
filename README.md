@@ -11,7 +11,7 @@ A **FastAPI + Streamlit** based **Retrieval-Augmented Generation (RAG) chatbot**
 
 The MLOps system illustrated in the image operates through two distinct pipelines:  
 - **For developers**, the workflow begins with pushing code to a source control system (step 1), triggering a CI/CD pipeline (steps 2). The CI/CD pipeline builds, tests, and deploys containers locally. After that, it pushes Docker images to Docker Hub registry (step 3). These images are then pulled in a Kubernetes cluster on Google Cloud (step 4). Once the services start, the LLM will be downloaded from HuggingFace model registry and stored in the cluster (step 5).  
-- **For users**, interactions start with a query from user (step 1), which routes requests through an API gateway (steps 2). The system generates embeddings (step 3), retrieves relevant vectors from the FAISS database (step 4), and returns a response (step 5). The API gateway finally forward the response and display it via Streamlit UI. 
+- **For users**, interactions start with a query from user (step 1), which routes requests through an API gateway (steps 2). The system forward the request (step 3), retrieves relevant vectors from the FAISS database (step 4), and returns a response (step 5). The API gateway finally forward the response and display it via Streamlit UI. 
 
 **Mornitoring services** are managed by developers using `Jaeger`, `Prometheus`, and `Grafana`, ensuring observability for users.
 
