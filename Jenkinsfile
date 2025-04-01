@@ -22,7 +22,7 @@ pipeline {
                 // Run pytest and generate code coverage report
                 echo 'Testing rag-pipeline backend'
                 sh '''
-                    docker exec python bash -c "\
+                    docker exec -e PYTHON_PATH="${PYTHON_PATH}" python bash -c "\
                     cd rag-pipeline && \
                     pip install --no-cache-dir -r requirements.txt && \
                     export PYTHONPATH=${PYTHON_PATH} OTEL_SDK_DISABLED=true && \
@@ -32,6 +32,7 @@ pipeline {
                            tests/
                            "
                 '''
+                sh 'docker cp python:/rag-pipeline/coverage.xml ./rag-pipeline/coverage.xml'
                 // Check if coverage passes the threshold
                 script {
                     echo 'Checking code coverage'
